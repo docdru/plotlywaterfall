@@ -1,10 +1,10 @@
-# plotly-waterfall
+# plotlywaterfall
 
 ## Description 
 
 A small package adding simple waterfall plotting capabilities on top of the plotly graphing package. Waterfall graphs are useful to display e.g. financial data such ans cashflow statements in an easily digestible format. 
 
-While plotly includes basic capabilities to plot waterfall graphs, it ships only limited features. This package provides simple, plotly-express-style waterfall graphs with grouping, multiple stacked categories and variable colors. 
+While plotly includes basic capabilities to plot waterfall graphs, it ships only limited features. The *plotlywaterfall* package provides simple, plotly-express-style waterfall graphs with grouping, multiple stacked categories and variable colors. 
 
 ## Installation
 
@@ -26,9 +26,11 @@ More examples can be found in the example notebook (https://github.com/docdru/pl
 ![DF](examples/example_df.png)
 
 
-One can plot this, with defined colors and automatic creating of total and subtotal by sing following code: 
+One can plot this data, with defined colors and automatic creating of total and subtotal, by using: 
 
 
+    from plotlywaterfall.waterfall import Waterfall
+    
     colors = {
         "one": {"one": "red", "two": "blue"},
         "two": {"one": "salmon", "two": "lightskyblue"},
@@ -42,7 +44,7 @@ One can plot this, with defined colors and automatic creating of total and subto
 
 
 
-produces
+Resulting graph:
 
 ![Example](examples/example.png)
 
