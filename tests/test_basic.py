@@ -1,4 +1,4 @@
-from plotly_waterfall.waterfall import Waterfall
+from plotlywaterfall.waterfall import Waterfall
 import pandas as pd
 import numpy as np
 import pytest
