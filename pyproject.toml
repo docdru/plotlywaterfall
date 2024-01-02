@@ -61,6 +61,7 @@ cov = [
 
 [tool.hatch.envs.jupyter.scripts]
 jupyterlab = "jupyter lab"
+export_example = "nbconvert "
 
 [[tool.hatch.envs.all.matrix]]
 python = ["3.8", "3.9", "3.10", "3.11", "3.12"]

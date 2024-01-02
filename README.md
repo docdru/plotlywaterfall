@@ -14,15 +14,21 @@ Use pip3:
 
 ## Usage
 
-More examples can be found in the example notebook (https://github.com/docdru/plotlywaterfall/blob/main/example.ipynb). Simple example: 
+More examples can be found in the example notebook (https://github.com/docdru/plotlywaterfall/blob/main/example.ipynb). Let's use this dataframe for a simple yet complete example: 
 
     df = pd.DataFrame({
         "X": ["A", "B", "C"]*4 + ["D", "D" ], 
-        # "Y": np.random.randint(0, 10, 6), 
         "Y": [4, 1, 8, 7, 3, 2] + [i-1 for i in [4, 1, 8, 7, 3, 2]] + [8, 5],
         "category": ["one"]*3+["two"]*3 + ["one"]*3+["two"]*3 + ["two", "three"],
-        "group": ["one"]*6 + ["two"]*6 + ["two", "three"]
+        "group": ["Group1"]*6 + ["Group2"]*6 + ["Group2", "Group3"]
     })
+    df
+
+'|    | X   |   Y | category   | group   |\n|---:|:----|----:|:-----------|:--------|\n|  0 | A   |   4 | one        | Group1  |\n|  1 | B   |   1 | one        | Group1  |\n|  2 | C   |   8 | one        | Group1  |\n|  3 | A   |   7 | two        | Group1  |\n|  4 | B   |   3 | two        | Group1  |\n|  5 | C   |   2 | two        | Group1  |\n|  6 | A   |   3 | one        | Group2  |\n|  7 | B   |   0 | one        | Group2  |\n|  8 | C   |   7 | one        | Group2  |\n|  9 | A   |   6 | two        | Group2  |\n| 10 | B   |   2 | two        | Group2  |\n| 11 | C   |   1 | two        | Group2  |\n| 12 | D   |   8 | two        | Group2  |\n| 13 | D   |   5 | three      | Group3  |'
+
+
+One can plot this, with defined colors and automatic creating of total and subtotal by sing following code: 
+
 
     colors = {
         "one": {"one": "red", "two": "blue"},
