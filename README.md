@@ -32,9 +32,9 @@ One can plot this data, with defined colors and automatic creating of total and 
     from plotlywaterfall.waterfall import Waterfall
     
     colors = {
-        "one": {"one": "red", "two": "blue"},
-        "two": {"one": "salmon", "two": "lightskyblue"},
-        "three": "green"
+        "Group1": {"one": "red", "two": "blue"},
+        "Group2": {"one": "salmon", "two": "lightskyblue"},
+        "Group3": "green"
     }
 
 
