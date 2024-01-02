@@ -24,7 +24,7 @@ More examples can be found in the example notebook (https://github.com/docdru/pl
     })
     df
 
-'|    | X   |   Y | category   | group   |\n|---:|:----|----:|:-----------|:--------|\n|  0 | A   |   4 | one        | Group1  |\n|  1 | B   |   1 | one        | Group1  |\n|  2 | C   |   8 | one        | Group1  |\n|  3 | A   |   7 | two        | Group1  |\n|  4 | B   |   3 | two        | Group1  |\n|  5 | C   |   2 | two        | Group1  |\n|  6 | A   |   3 | one        | Group2  |\n|  7 | B   |   0 | one        | Group2  |\n|  8 | C   |   7 | one        | Group2  |\n|  9 | A   |   6 | two        | Group2  |\n| 10 | B   |   2 | two        | Group2  |\n| 11 | C   |   1 | two        | Group2  |\n| 12 | D   |   8 | two        | Group2  |\n| 13 | D   |   5 | three      | Group3  |'
+|    | X   |   Y | category   | group   |\n|---:|:----|----:|:-----------|:--------|\n|  0 | A   |   4 | one        | Group1  |\n|  1 | B   |   1 | one        | Group1  |\n|  2 | C   |   8 | one        | Group1  |\n|  3 | A   |   7 | two        | Group1  |\n|  4 | B   |   3 | two        | Group1  |\n|  5 | C   |   2 | two        | Group1  |\n|  6 | A   |   3 | one        | Group2  |\n|  7 | B   |   0 | one        | Group2  |\n|  8 | C   |   7 | one        | Group2  |\n|  9 | A   |   6 | two        | Group2  |\n| 10 | B   |   2 | two        | Group2  |\n| 11 | C   |   1 | two        | Group2  |\n| 12 | D   |   8 | two        | Group2  |\n| 13 | D   |   5 | three      | Group3  |
 
 
 One can plot this, with defined colors and automatic creating of total and subtotal by sing following code: 
