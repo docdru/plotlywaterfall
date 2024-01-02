@@ -16,23 +16,24 @@ Use pip3:
 
 More examples can be found in the example notebook (https://github.com/docdru/plotlywaterfall/blob/main/example.ipynb). Simple example: 
 
-
     df = pd.DataFrame({
         "X": ["A", "B", "C"]*4 + ["D", "D" ], 
         # "Y": np.random.randint(0, 10, 6), 
         "Y": [4, 1, 8, 7, 3, 2] + [i-1 for i in [4, 1, 8, 7, 3, 2]] + [8, 5],
         "category": ["one"]*3+["two"]*3 + ["one"]*3+["two"]*3 + ["two", "three"],
-        "group": ["Group1"]*6 + ["Group2"]*6 + ["Group2", "Group3"]
+        "group": ["one"]*6 + ["two"]*6 + ["two", "three"]
     })
 
     colors = {
-        "Group1": {"one": "red", "two": "blue"},
-        "Group2": {"one": "salmon", "two": "lightskyblue"},
-        "Group3": "green"
+        "one": {"one": "red", "two": "blue"},
+        "two": {"one": "salmon", "two": "lightskyblue"},
+        "three": "green"
     }
 
+
     c = Waterfall(df, x="X", y="Y", category="category", colors=colors, group="group", total=True, subtotals={"C": "Subtotal"})
-    c.get_fig()
+    fig = c.get_fig()
+    fig
 
 
 
@@ -40,3 +41,11 @@ produces
 
 ![Example](example.png)
 
+
+## Disclaimer
+
+I might maintain and improve the package. I might also not.
+
+Known open points: 
+- It is not possible to have mixed signs per X-value.
+- I am note really happy with the interface for defining the colors.
