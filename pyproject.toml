@@ -27,8 +27,8 @@ classifiers = [
 
 
 [project.urls]
-Homepage = "https://github.com/drueffer/plotlywaterfall"
-Issues = "https://github.com/drueffer/plotlywaterfall/issues"
+Homepage = "https://github.com/docdru/plotlywaterfall"
+Issues = "https://github.com/docdru/plotlywaterfall/issues"
 
 [tool.hatch.version]
 path = "src/plotlywaterfall/__about__.py"
