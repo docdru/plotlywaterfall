@@ -23,7 +23,7 @@ More examples can be found in the example notebook (https://github.com/docdru/pl
         "group": ["Group1"]*6 + ["Group2"]*6 + ["Group2", "Group3"]
     })
 
-![DF](examples/example_df.png)
+![DF](https://raw.githubusercontent.com/docdru/plotlywaterfall/main/examples/example_df.png)
 
 
 One can plot this data, with defined colors and automatic creating of total and subtotal, by using: 
@@ -46,7 +46,7 @@ One can plot this data, with defined colors and automatic creating of total and 
 
 Resulting graph:
 
-![Example](examples/example.png)
+![Example](https://raw.githubusercontent.com/docdru/plotlywaterfall/main/examples/example.png)
 
 
 ## Disclaimer
