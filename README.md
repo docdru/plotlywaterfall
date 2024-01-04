@@ -56,3 +56,8 @@ I might maintain and improve the package. I might also not.
 Known open points: 
 - It is not possible to have mixed signs per X-value.
 - I am note really happy with the interface for defining the colors.
+
+
+## Changelog
+
+Refer to [CHANGELOG.md](https://github.com/docdru/plotlywaterfall/blob/main/CHANGELOG.md)
