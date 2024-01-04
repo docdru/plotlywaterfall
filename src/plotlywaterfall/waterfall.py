@@ -5,11 +5,29 @@ import plotly.graph_objects as go
 
 class Waterfall(object):
     def __init__(
-            self, df, x=None, y=None, group=None, category=None, 
-            barwidth=0.3, gap=0.01, connector_line=dict(color="darkgrey", width=.75),
-            colors=None, total=False, total_type="category", total_column_name="Total",
-            subtotals=None, 
+            self, df: pd.DataFrame, x:str, y:str, group:str|None=None, category:str|None=None, 
+            barwidth:float=0.3, gap:float=0.01, connector_line:dict=dict(color="darkgrey", width=.75),
+            colors:dict|None=None, total:bool=False, total_type:str="category", total_column_name:str="Total",
+            subtotals:dict|None=None, 
        ):
+        """Instanciate Waterfall object. All configuration is done by handing the correct kwargs. 
+
+        Args:
+            df (pd.DataFrame): Pandas Dataframe containing all data in correct format. 
+            x (str): Column containing x-values/labels
+            y (str): Column containing y-values
+            group (str | None, optional): If not None: column containing group labels. Defaults to None.
+            category (str | None, optional): If not None: column containing category labels. Defaults to None.
+            barwidth (float, optional): Width of bars, should be 0.0 to 1.0. Defaults to 0.3.
+            gap (float, optional): Gap between bars of different groups. Defaults to 0.01.
+            connector_line (dict, optional): Parameters defining line style for lines connecting bars. Defaults to dict(color="darkgrey", width=.75).
+            colors (dict | None, optional): dict identifying colors, compare documentation / example. Defaults to None, which uses default colors. 
+            total (bool, optional): If True, calculates the total and ads it as last x-value. Defaults to False.
+            total_type (str, optional): How to calculate the total. Can be "category" or "sumtotal". Defaults to "category".
+            total_column_name (str, optional): Label of the x-value for total . Defaults to "Total".
+            subtotals (dict | None, optional): dict with subtotals which should be added in format {"where": "label_name"}. Defaults to None.
+        """
+         
         if not isinstance(df, pd.DataFrame):
             raise TypeError("Expected df to be of type DataFrame")
         self._df = df
@@ -27,39 +45,24 @@ class Waterfall(object):
             self._subtotals = {}
         elif isinstance(subtotals, dict):
             self._subtotals = subtotals
+        else:
+            raise TypeError("subtotals should be of type dict")
         self._total = total
         self._total_type = total_type
         if total and (total_type=="category"):
             self._subtotals.update({self._df[self._x].unique()[-1]: total_column_name})
-    
-    def _test_df(self):
-        if self._group is None:
-            gb = self._x
-        else:
-            gb = [self._group, self._x]
-        for i, g in self._df.groupby(gb):
-            if not (np.all(g[self._y]>=0) | np.all(g[self._y]<=0)):
-                raise NotImplementedError("Currently mixed signed categorization is not supported (yet)")
-    
-    def add_subtotal(self, x, name):
-        if self._subtotals is None:
-            self.add_total()
-        if x not in self._df[self._x].unique():
-            raise ValueError("Cannot find value {} in data".format(x))
-        self._subtotals.update({x: name})
 
-    def _get_x_values(self, tdf):
-        # Define x axis and include subtotals and totals
-        X = list(tdf[self._x].unique())
-        mt = [False] * len(X)
-        for total in self._subtotals:
-            pos = X.index(total)+1
-            X.insert(pos, self._subtotals[total])
-            mt.insert(pos, True)
-        X = pd.DataFrame({"label":X, "makeTotal": mt}).reset_index().set_index("label").rename({"index": self._x}, axis=1)
-        return X
     
-    def get_fig(self):
+    def get_fig(self) -> go.Figure:
+        """Creates Plotly Figure instance
+
+        Raises:
+            NotImplementedError: Certain features, such as mixed signs per x value are not (yet) supported
+
+        Returns:
+            Figure: Configured plotly.graph_objects.Figure instance
+        """
+
         # tdf = self._get_df_merged_w_color()
         tdf = self._df.copy()
         X = self._get_x_values(tdf)
@@ -92,6 +95,33 @@ class Waterfall(object):
             )
         )
         return fig
+  
+    def _test_df(self):
+        if self._group is None:
+            gb = self._x
+        else:
+            gb = [self._group, self._x]
+        for i, g in self._df.groupby(gb):
+            if not (np.all(g[self._y]>=0) | np.all(g[self._y]<=0)):
+                raise NotImplementedError("Currently mixed signed categorization is not supported (yet)")
+    
+    def add_subtotal(self, x, name):
+        if self._subtotals is None:
+            self.add_total()
+        if x not in self._df[self._x].unique():
+            raise ValueError("Cannot find value {} in data".format(x))
+        self._subtotals.update({x: name})
+
+    def _get_x_values(self, tdf):
+        # Define x axis and include subtotals and totals
+        X = list(tdf[self._x].unique())
+        mt = [False] * len(X)
+        for total in self._subtotals:
+            pos = X.index(total)+1
+            X.insert(pos, self._subtotals[total])
+            mt.insert(pos, True)
+        X = pd.DataFrame({"label":X, "makeTotal": mt}).reset_index().set_index("label").rename({"index": self._x}, axis=1)
+        return X
 
     def _add_group(self, fig, X, groupno, groupname, group):
         b = group.groupby([self._x], sort=False)[self._y].sum().cumsum().shift(1).fillna(0)
