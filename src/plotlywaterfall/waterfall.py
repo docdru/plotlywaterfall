@@ -148,10 +148,18 @@ class Waterfall(object):
 
         if isinstance(colors, dict) and (categoryname in colors):
             colors = colors[categoryname]
+        
+        if categoryname is None:
+            name = groupname
+            groupnametitle = None
+        else:
+            name = categoryname
+            groupnametitle = groupname
             
+        
         fig.add_bar(
-            x=x, y=y, base=b, offsetgroup=groupno, name=categoryname, marker_color=colors,
-            legendgroup=groupname, legendgrouptitle_text=groupname,
+            x=x, y=y, base=b, offsetgroup=groupno, name=name, marker_color=colors,
+            legendgroup=groupname, legendgrouptitle_text=groupnametitle,
             width=self._barwidth, offset=-(self._barwidth+self._gap/2)*self.__totalgroups/2 + 
                 (self._barwidth+self._gap/2)*groupno,
             )
