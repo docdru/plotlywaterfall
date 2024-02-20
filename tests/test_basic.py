@@ -139,6 +139,13 @@ def test_other_example2():
             [4.0, nan, -2.0, nan, 2.0], 
             [nan, 1.0, nan, -0.5, 0.5]
         ], equal_nan=True)
+    
+    assert [[i["x0"], i["x1"], i["y0"], i["y1"]] for i in fig.layout.shapes] == [
+        [-0.1525, 1.1475, 7.0, 7.0],
+        [0.8475, 2.1475, 8.0, 8.0],
+        [1.8475, 3.1475, 5.0, 5.0],
+        [2.8475, 4.1475, 4.5, 4.5]
+    ]
 
 def test_other_example3():
     df = pd.DataFrame({
@@ -160,6 +167,13 @@ def test_other_example3():
             [4.0, nan, -5.0, nan, -1.0], 
             [nan, 1.0, nan, -2.0, -1.0]
         ], equal_nan=True)
+    
+    assert [[i["x0"], i["x1"], i["y0"], i["y1"]] for i in fig.layout.shapes] == [
+        [-0.1525, 1.1475, 7.0, 7.0],
+        [0.8475, 2.1475, 8.0, 8.0],
+        [1.8475, 3.1475, -1.0, -1.0],
+        [2.8475, 4.1475, -3.0, -3.0]
+    ]
 
 def test_other_example3_nototal():
     df = pd.DataFrame({
@@ -181,6 +195,12 @@ def test_other_example3_nototal():
             [4.0, nan, -5.0, nan], 
             [nan, 1.0, nan, -2.0]
         ], equal_nan=True)
+    
+    assert [[i["x0"], i["x1"], i["y0"], i["y1"]] for i in fig.layout.shapes] == [
+        [-0.1525, 1.1475, 7, 7], 
+        [0.8475, 2.1475, 8, 8], 
+        [1.8475, 3.1475, -1, -1]
+        ]
 
 def test_sumtotal():
     df = pd.DataFrame({
@@ -215,3 +235,30 @@ def test_sumtotal_colorgroup():
     fig = Waterfall(df, x="X", y="Y", category="category", group="group", total=True, total_type="sumtotal", colors=colors).get_fig()
     for i in fig.data:
         assert i["marker"]["color"] == colors[i["legendgroup"]]
+        
+
+def test_empty_bar_second_group():
+    df = pd.DataFrame({
+        "X": ["A", "B", "C"] * 4,
+        "Y": [1, 2]*3 + [2,3]*3, 
+        "group": ["g1"]*6 + ["g2"]*6
+    })
+
+    df= df[~((df.X=="B") & (df.group=="g2"))]
+    df["X"] = pd.Categorical(df["X"], ["A", "B", "C"])
+    df = df.sort_values("X")
+
+    c = Waterfall(df, x="X", y="Y", group="group")
+    fig = c.get_fig()
+    
+    expected_result = np.array([
+        [-0.305, 0.995, 3, 3],
+        [0.695, 1.995, 6, 6],
+        [0.0, 1.3, 5, 5],
+        [1.0, 2.3, 5, 5]
+    ])
+
+    out = []
+    for i in fig.layout.shapes:
+        out.append([i["x0"], i["x1"], i["y0"], i["y1"]])
+    assert np.allclose(np.array(out), expected_result)

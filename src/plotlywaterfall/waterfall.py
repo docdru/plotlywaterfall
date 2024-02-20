@@ -160,8 +160,8 @@ class Waterfall(object):
 
     def _add_lines(self, fig, X, group, groupno):
         x = X[self._x]
-        ys = group.groupby([self._x], sort=False)[self._y].sum().cumsum()
-        ys = X.merge(pd.DataFrame(ys), left_index=True, right_index=True, how="left")[self._y].ffill()
+        ys = group.groupby([self._x], sort=False)[self._y].sum()
+        ys = X.merge(pd.DataFrame(ys), left_index=True, right_index=True, how="left")[self._y].fillna(0).cumsum().ffill()
         x0s = x[0:-1]-(self._barwidth+self._gap/2)*self.__totalgroups/2 + (self._barwidth+self._gap/2)*groupno
         x1s = x[1:]-(self._barwidth+self._gap/2)*self.__totalgroups/2 + (self._barwidth+self._gap/2)*groupno + self._barwidth
         for i, (x0, x1, y) in enumerate(zip(x0s, x1s, ys)):
