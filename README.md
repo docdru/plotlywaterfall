@@ -93,7 +93,7 @@ Common tasks:
 | Open notebooks | `uv run --with jupyterlab jupyter lab` |
 | Build sdist + wheel | `uv build` |
 
-CI (GitHub Actions) runs lint, type checks, the test suite on Python 3.11–3.15 (Linux, plus Windows and macOS),
+CI (GitHub Actions) runs lint, type checks, the test suite on Python 3.11–3.15 (Linux, plus Windows; macOS on `main` and the weekly run),
 a test against the lowest supported dependency versions, the example notebook, and a package build.
 
 ### Releasing
