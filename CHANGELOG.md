@@ -11,6 +11,12 @@
 - Code formatted with ruff; no functional changes.
 - Automated AI pull-request review (Mistral) posted as a PR comment; see README "AI pull-request review".
 
+### Added
+- **Mixed signs within one bar**: categories of one bar (at an x-value or in a total) may now have
+  different signs. The bar is split into narrow sub-steps that walk from its start to its end level,
+  with a "net ghost" bar behind them showing the net change. New arguments `mixed_signs`
+  (`"steps"` default, `"error"` for the previous behaviour), `net_ghost` and `step_order`.
+
 ### Fixed
 - `total_type="sumtotal"` with groups raised `KeyError: 'Y'` unless the value column was named `Y`.
 - Groups with opposite signs at the same x-value (or opposite-signed totals) raised

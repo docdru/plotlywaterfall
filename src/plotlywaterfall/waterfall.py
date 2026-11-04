@@ -6,6 +6,14 @@ import plotly.graph_objects as go
 
 DEFAULT_CONNECTOR_LINE: dict[str, Any] = {"color": "darkgrey", "width": 0.75}
 TOTAL_TYPES = ("category", "sumtotal")
+MIXED_SIGNS = ("steps", "error")
+STEP_ORDERS = ("data", "positive_first", "largest_first")
+DEFAULT_NET_GHOST: dict[str, Any] = {
+    "color": "rgba(136, 135, 128, 0.25)",
+    "line": {"color": "rgb(136, 135, 128)", "width": 0.75},
+}
+# Share of a sub-step's slot that is filled by its bar; the rest is a small visual gap
+SUBSTEP_FILL = 0.9
 
 
 class Waterfall:
@@ -24,6 +32,9 @@ class Waterfall:
         total_type: str = "category",
         total_column_name: str = "Total",
         subtotals: dict | None = None,
+        mixed_signs: str = "steps",
+        net_ghost: bool | dict = True,
+        step_order: str = "data",
     ):
         """Instanciate Waterfall object. All configuration is done by handing the correct kwargs.
 
@@ -41,12 +52,25 @@ class Waterfall:
             total_type (str, optional): How to calculate the total. Can be "category" or "sumtotal". Defaults to "category".
             total_column_name (str, optional): Label of the x-value for total . Defaults to "Total".
             subtotals (dict | None, optional): dict with subtotals which should be added in format {"where": "label_name"}. Defaults to None.
+            mixed_signs (str, optional): What to do when the categories of one bar have
+                different signs (e.g. +1 and -4 at the same x, or in a total). "steps" splits
+                the bar into one narrow sub-step per category that walks from the bar's start
+                level to its end level. "error" raises NotImplementedError (behaviour before
+                0.10). Bars whose categories share a sign are drawn as stacked bars either way.
+                Defaults to "steps".
+            net_ghost (bool | dict, optional): For bars split into sub-steps: draw a light bar
+                behind them spanning the net change of the step. A dict is used as plotly
+                marker properties of that bar. Defaults to True.
+            step_order (str, optional): Order of the sub-steps within a split bar: "data"
+                (order of the categories in df), "positive_first" or "largest_first" (by
+                absolute value). Defaults to "data".
 
         Raises:
             TypeError: If df is not a DataFrame or subtotals is not a dict.
-            ValueError: If a column does not exist, y contains missing values, total_type is
-                unknown or a subtotal refers to an x-value that is not in the data.
-            NotImplementedError: If values of different signs share one bar.
+            ValueError: If a column does not exist, y contains missing values, an option has an
+                unknown value or a subtotal refers to an x-value that is not in the data.
+            NotImplementedError: If mixed_signs="error" and values of different signs share
+                one bar.
         """
 
         if not isinstance(df, pd.DataFrame):
@@ -63,6 +87,20 @@ class Waterfall:
         )
         self._colors = colors
         self._total_column_name = total_column_name
+        if mixed_signs not in MIXED_SIGNS:
+            raise ValueError(f"mixed_signs must be one of {MIXED_SIGNS}, got {mixed_signs!r}")
+        if step_order not in STEP_ORDERS:
+            raise ValueError(f"step_order must be one of {STEP_ORDERS}, got {step_order!r}")
+        self._mixed_signs = mixed_signs
+        self._step_order = step_order
+        if net_ghost is True:
+            self._net_ghost: dict | None = dict(DEFAULT_NET_GHOST)
+        elif isinstance(net_ghost, dict):
+            self._net_ghost = dict(net_ghost)
+        elif net_ghost is False or net_ghost is None:
+            self._net_ghost = None
+        else:
+            raise TypeError("net_ghost should be a bool or a dict of marker properties")
         self._test_df()
         if subtotals is None:
             subtotals = {}
@@ -126,6 +164,8 @@ class Waterfall:
                 f"Column {self._y!r} contains missing values (NaN) in rows "
                 f"{list(self._df.index[missing])}; drop or fill them first"
             )
+        if self._mixed_signs != "error":
+            return
         gb = self._x if self._group is None else [self._group, self._x]
         for _, g in self._df.groupby(gb, observed=True):
             if not (np.all(g[self._y] >= 0) | np.all(g[self._y] <= 0)):
@@ -157,16 +197,6 @@ class Waterfall:
             color = color[categoryname]
         return None if isinstance(color, dict) else color
 
-    @staticmethod
-    def _check_total_signs(traces) -> None:
-        """Stacked bars of one group must share a sign at every x (relevant for totals)."""
-        for values in zip(*[trace["y"] for trace in traces], strict=True):
-            ia = np.array(values, dtype=float)
-            if not (np.all((ia >= 0) | np.isnan(ia)) | np.all((ia <= 0) | np.isnan(ia))):
-                raise NotImplementedError(
-                    "Currently mixed signed categories in totals are not supported (yet)"
-                )
-
     def _get_x_values(self, tdf):
         # Define x axis and include subtotals and totals
         labels = list(tdf[self._x].unique())
@@ -184,45 +214,111 @@ class Waterfall:
         return X
 
     def _add_group(self, fig, X, groupno, groupname, group):
-        b = group.groupby([self._x], sort=False)[self._y].sum().cumsum().shift(1).fillna(0)
-        b = X.merge(pd.DataFrame(b), left_index=True, right_index=True, how="left")[self._y].fillna(
-            0
-        )
-        first_trace = len(fig.data)
+        level = group.groupby([self._x], sort=False)[self._y].sum().cumsum().shift(1).fillna(0)
+        level = X.merge(pd.DataFrame(level), left_index=True, right_index=True, how="left")[
+            self._y
+        ].fillna(0)
+
         if self._category is None:
-            b = self._add_bar(fig, X, b, None, group, groupno, groupname)
+            categories = [(None, group)]
         else:
-            for categoryname, category in group.groupby(self._category, sort=False, observed=True):
-                b = self._add_bar(fig, X, b, categoryname, category, groupno, groupname)
-        self._check_total_signs(fig.data[first_trace:])
+            categories = list(group.groupby(self._category, sort=False, observed=True))
+        # values[p, c]: height of category c's segment at x-position p (NaN = no segment)
+        values = np.column_stack([self._category_values(X, category) for _, category in categories])
+        level_values = level.to_numpy(dtype=float)
+        bases, offsets, widths, mixed = self._layout_segments(values, level_values, groupno)
+
+        if mixed.any() and self._net_ghost is not None:
+            self._add_net_ghost(fig, X, level_values, values, mixed, groupno, groupname)
+
+        x = X[self._x]
+        for c, (categoryname, _) in enumerate(categories):
+            if categoryname is None:
+                name = groupname
+                groupnametitle = None
+            else:
+                name = categoryname
+                groupnametitle = groupname
+            fig.add_bar(
+                x=x,
+                y=values[:, c],
+                base=bases[:, c],
+                offsetgroup=groupno,
+                name=name,
+                marker_color=self._color(groupname, categoryname),
+                legendgroup=groupname,
+                legendgrouptitle_text=groupnametitle,
+                # Arrays only where a bar is split into sub-steps, so that ordinary charts
+                # keep producing exactly the same figure as before
+                width=widths[:, c] if mixed.any() else self._barwidth,
+                offset=offsets[:, c] if mixed.any() else self._offset(groupno),
+            )
         self._add_lines(fig, X, group, groupno)
 
-    def _add_bar(self, fig, X, b, categoryname, category, groupno, groupname):
+    def _category_values(self, X, category) -> np.ndarray:
+        """Segment heights of one category per x-position; totals hold the running sum."""
         values = category.groupby([self._x])[self._y].sum()
-        x = X[self._x]
         y = X.merge(pd.DataFrame(values), left_index=True, right_index=True, how="left")[self._y]
-        y = y.fillna(0).cumsum().where(X.makeTotal, y)
+        return y.fillna(0).cumsum().where(X.makeTotal, y).to_numpy(dtype=float)
 
-        if categoryname is None:
-            name = groupname
-            groupnametitle = None
-        else:
-            name = categoryname
-            groupnametitle = groupname
+    def _layout_segments(self, values, level, groupno):
+        """Compute base, offset and width of every segment of one group.
 
+        Bars whose segments share a sign are stacked in category order. Bars with mixed
+        signs are split into narrow sub-steps, each starting where the previous one ended.
+        """
+        n_positions = values.shape[0]
+        filled = np.nan_to_num(values)
+        # Stacked layout (also used for the invisible base of missing segments)
+        bases = level[:, None] + np.cumsum(filled, axis=1) - filled
+        offsets = np.full(values.shape, self._offset(groupno))
+        widths = np.full(values.shape, float(self._barwidth))
+        mixed = np.zeros(n_positions, dtype=bool)
+
+        for p in range(n_positions):
+            row = values[p]
+            present = np.flatnonzero(~np.isnan(row))
+            if not ((row[present] > 0).any() and (row[present] < 0).any()):
+                continue
+            if self._mixed_signs == "error":
+                raise NotImplementedError(
+                    "Currently mixed signed categories in totals are not supported (yet)"
+                )
+            mixed[p] = True
+            order = self._order_steps(present, row)
+            slot = self._barwidth / len(order)
+            running = level[p]
+            for k, c in enumerate(order):
+                bases[p, c] = running
+                running += row[c]
+                widths[p, c] = slot * SUBSTEP_FILL
+                offsets[p, c] = self._offset(groupno) + k * slot + slot * (1 - SUBSTEP_FILL) / 2
+        return bases, offsets, widths, mixed
+
+    def _order_steps(self, present, row) -> list[int]:
+        """Order of the sub-steps (category indices) within one split bar."""
+        indices = list(present)
+        if self._step_order == "positive_first":
+            return [c for c in indices if row[c] > 0] + [c for c in indices if row[c] <= 0]
+        if self._step_order == "largest_first":
+            return sorted(indices, key=lambda c: -abs(row[c]))
+        return indices
+
+    def _add_net_ghost(self, fig, X, level, values, mixed, groupno, groupname):
+        """Light bar behind the sub-steps of split bars, spanning the net change."""
         fig.add_bar(
-            x=x,
-            y=y,
-            base=b,
+            x=X[self._x].to_numpy()[mixed],
+            y=np.nansum(values, axis=1)[mixed],
+            base=level[mixed],
             offsetgroup=groupno,
-            name=name,
-            marker_color=self._color(groupname, categoryname),
+            name="Net change",
+            marker=self._net_ghost,
             legendgroup=groupname,
-            legendgrouptitle_text=groupnametitle,
+            showlegend=False,
+            hovertemplate="Net change: %{y}<extra></extra>",
             width=self._barwidth,
             offset=self._offset(groupno),
         )
-        return b + y.fillna(0)
 
     def _add_lines(self, fig, X, group, groupno):
         x = X[self._x]
