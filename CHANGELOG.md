@@ -9,12 +9,20 @@
 - `color="direction"` colours increases, decreases and totals (default green / red / grey) and adds
   a legend for them.
 - Keys of `color_discrete_map` / `pattern_shape_map` that match no value raise a `UserWarning`.
+- **Value labels**: `value_labels` (`"bar"` default, `"segment"`, `"both"`, `None`), with one number
+  format for labels and hover: `number_format` (Python format spec or function), `number_prefix`,
+  `number_suffix`. Changes are signed (`+9`, `-7`), totals not.
+- **Hover texts** show the x label, the segment's category and value, the step for split bars and the
+  running total (previously plotly's default hover showed the internal numeric x-position).
+- `title` and `labels` (column display names, as in plotly express) arguments.
 - **Mixed signs within one bar**: categories of one bar (at an x-value or in a total) may now have
   different signs. The bar is split into narrow sub-steps that walk from its start to its end level,
   with a "net ghost" bar behind them showing the net change. New arguments `mixed_signs`
   (`"steps"` default, `"error"` for the previous behaviour), `net_ghost` and `step_order`.
 
 ### Changed
+- **Value labels are shown by default** (`value_labels=None` restores unlabelled bars) and the y-axis is
+  titled with the y column name (or its `labels` entry). The axis range leaves room for the labels.
 - **Minimum Python is now 3.11** (3.8–3.10 are end-of-life; the code never ran on 3.8/3.9).
 - `numpy` is now declared as a dependency (it was imported but not declared); dependencies are declared in
   `pyproject.toml` and `requirements.txt` was removed.

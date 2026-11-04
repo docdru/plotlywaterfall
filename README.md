@@ -57,6 +57,22 @@ Resulting graph:
 
 ![Example](https://raw.githubusercontent.com/docdru/plotlywaterfall/main/examples/example.png)
 
+### Labels, number format and hover
+
+Every bar is labelled with its change (signed, e.g. `+9`) or, for totals, its value; hovering shows
+the step, its category and the running total.
+
+| Argument | Meaning | Default |
+|---|---|---|
+| `value_labels` | `"bar"` (one label per bar, outside), `"segment"` (inside each stacked segment), `"both"` or `None` | `"bar"` |
+| `number_format` | Python format spec for the absolute value (e.g. `",.1f"`) or a function | thousands separators, up to two decimals |
+| `number_prefix` / `number_suffix` | Units around the number; the sign stays in front (`-$5M`) | `""` |
+| `title` | Figure title | `None` |
+| `labels` | Display names for columns, like plotly express (`{"Y": "Cashflow [MUSD]"}`); titles the axes | y-axis titled with the y column |
+
+    Waterfall(df, x="X", y="Y", total=True, number_prefix="$", number_suffix="M",
+              title="Cash bridge", labels={"Y": "Cashflow [MUSD]"}).get_fig()
+
 ### Colors
 
 Colours work like in plotly express:

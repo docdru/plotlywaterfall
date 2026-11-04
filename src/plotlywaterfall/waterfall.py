@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from plotlywaterfall._coloring import Coloring
+from plotlywaterfall._format import NumberFormat, NumberFormatter
 
 DEFAULT_CONNECTOR_LINE: dict[str, Any] = {"color": "darkgrey", "width": 0.75}
 TOTAL_TYPES = ("category", "sumtotal")
@@ -16,6 +17,7 @@ DEFAULT_NET_GHOST: dict[str, Any] = {
 }
 # Share of a sub-step's slot that is filled by its bar; the rest is a small visual gap
 SUBSTEP_FILL = 0.9
+VALUE_LABELS = ("bar", "segment", "both", "none")
 
 
 class Waterfall:
@@ -42,6 +44,12 @@ class Waterfall:
         color_discrete_sequence: list[str] | None = None,
         pattern_shape: str | None = None,
         pattern_shape_map: dict | None = None,
+        value_labels: str | None = "bar",
+        number_format: NumberFormat = None,
+        number_prefix: str = "",
+        number_suffix: str = "",
+        title: str | None = None,
+        labels: dict | None = None,
     ):
         """Instanciate Waterfall object. All configuration is done by handing the correct kwargs.
 
@@ -90,6 +98,23 @@ class Waterfall:
             pattern_shape_map (dict | None, optional): Pattern per value of `pattern_shape`,
                 e.g. {"Actual": "/"}; plotly shapes are "", "/", "\\", "x", "-", "|", "+"
                 and ".". Defaults to None (assigned in that order).
+            value_labels (str | None, optional): Value labels on the bars. "bar": one label
+                per bar with its change (signed, e.g. "+9") or, for totals, its value, placed
+                above or below the bar. "segment": the value inside every stacked segment
+                (hidden where it does not fit). "both", or None for no labels.
+                Defaults to "bar".
+            number_format (str | callable | None, optional): Format of numbers in labels and
+                hover texts: a Python format spec for the absolute value (e.g. ",.1f"), or a
+                callable taking the absolute value and returning text. Defaults to None:
+                thousands separators and up to two decimals (1,234.5).
+            number_prefix (str, optional): Text before numbers, after the sign, e.g. "$"
+                gives "-$5". Defaults to "".
+            number_suffix (str, optional): Text after numbers, e.g. " M€". Defaults to "".
+            title (str | None, optional): Figure title. Defaults to None.
+            labels (dict | None, optional): Display names for columns, as in plotly express,
+                e.g. {"Y": "Cashflow [MUSD]"}. Used for the axis titles. The y-axis is titled
+                with the (renamed) y column; the x-axis only gets a title if x is in labels.
+                Defaults to None.
 
         Raises:
             TypeError: If df is not a DataFrame or subtotals is not a dict.
@@ -126,6 +151,16 @@ class Waterfall:
             self._net_ghost = None
         else:
             raise TypeError("net_ghost should be a bool or a dict of marker properties")
+        if value_labels is None or value_labels is False:
+            value_labels = "none"
+        if value_labels not in VALUE_LABELS:
+            raise ValueError(
+                f"value_labels must be one of {VALUE_LABELS} or None, got {value_labels!r}"
+            )
+        self._value_labels = value_labels
+        self._fmt = NumberFormatter(number_format, number_prefix, number_suffix)
+        self._title = title
+        self._labels = dict(labels or {})
         self._test_df()
         self._coloring = Coloring(
             df,
@@ -168,6 +203,7 @@ class Waterfall:
         X = self._get_x_values(tdf)
         self._coloring.resolve()
         self._used_directions: set[str] = set()
+        self._label_ys: dict[str, list[float]] = {"above": [], "below": []}
 
         fig = go.Figure()
 
@@ -188,7 +224,18 @@ class Waterfall:
         for legend_entry in self._coloring.direction_legend(self._used_directions):
             fig.add_bar(**legend_entry)
 
-        fig.update_layout(xaxis={"tickmode": "array", "tickvals": X[self._x], "ticktext": X.index})
+        fig.update_layout(
+            xaxis={"tickmode": "array", "tickvals": X[self._x], "ticktext": X.index},
+            yaxis_title_text=self._labels.get(self._y, self._y),
+        )
+        if self._x in self._labels:
+            fig.update_layout(xaxis_title_text=self._labels[self._x])
+        if self._title is not None:
+            fig.update_layout(title_text=self._title)
+        self._make_room_for_labels(fig)
+        if self._value_labels in ("segment", "both"):
+            # segment labels that do not fit inside their bar are hidden instead of shrunk
+            fig.update_layout(uniformtext_minsize=9, uniformtext_mode="hide")
         return fig
 
     def _test_df(self) -> None:
@@ -265,6 +312,9 @@ class Waterfall:
 
         x = X[self._x]
         is_total = X.makeTotal.to_numpy(dtype=bool)
+        net = np.nansum(values, axis=1)
+        level_after = np.where(is_total, net, level_values + net)
+        n_segments = (~np.isnan(values)).sum(axis=1)
         for c, (categoryname, _) in enumerate(categories):
             if categoryname is None:
                 name = groupname
@@ -286,9 +336,87 @@ class Waterfall:
                 # keep producing exactly the same figure as before
                 width=widths[:, c] if mixed.any() else self._barwidth,
                 offset=offsets[:, c] if mixed.any() else self._offset(groupno),
+                **self._segment_texts(
+                    X, values[:, c], categoryname, groupname, is_total, net, level_after, n_segments
+                ),
             )
+        if self._value_labels in ("bar", "both"):
+            self._add_bar_labels(fig, X, values, bases, net, is_total, groupno)
         self._track_directions(values, is_total)
         self._add_lines(fig, X, group, groupno)
+
+    def _segment_texts(
+        self, X, values, categoryname, groupname, is_total, net, level_after, n_segments
+    ) -> dict:
+        """Hover text (and segment labels) for one trace."""
+        hover = []
+        texts = []
+        for p, label in enumerate(X.index):
+            value = values[p]
+            if np.isnan(value):
+                hover.append(["", ""])
+                texts.append("")
+                continue
+            total = bool(is_total[p])
+            name = categoryname if categoryname is not None else ("Total" if total else "Change")
+            lines = [f"{name}: {self._fmt(value, signed=not total)}"]
+            if total and n_segments[p] > 1:
+                lines.append(f"{label}: {self._fmt(net[p])}")
+            elif not total:
+                if n_segments[p] > 1:
+                    lines.append(f"Step: {self._fmt(net[p], signed=True)}")
+                lines.append(f"Running total: {self._fmt(level_after[p])}")
+            hover.append([str(label), "<br>".join(lines)])
+            texts.append(self._fmt(value, signed=not total))
+        extra = "" if groupname is None else str(groupname)
+        kwargs: dict = {
+            "customdata": hover,
+            "hovertemplate": f"<b>%{{customdata[0]}}</b><br>%{{customdata[1]}}<extra>{extra}</extra>",
+        }
+        if self._value_labels in ("segment", "both"):
+            kwargs.update(text=texts, textposition="inside", insidetextanchor="middle", textangle=0)
+        return kwargs
+
+    def _add_bar_labels(self, fig, X, values, bases, net, is_total, groupno) -> None:
+        """One label per bar: its signed change, or its value for totals, outside the bar."""
+        present = ~np.isnan(values)
+        ends = np.where(present, bases + np.nan_to_num(values), np.nan)
+        starts = np.where(present, bases, np.nan)
+        center = self._offset(groupno) + self._barwidth / 2
+        for p, position in enumerate(X[self._x]):
+            if not present[p].any():
+                continue
+            top = np.nanmax([np.nanmax(starts[p]), np.nanmax(ends[p])])
+            bottom = np.nanmin([np.nanmin(starts[p]), np.nanmin(ends[p])])
+            self._add_label(
+                fig, position + center, net[p], top, bottom, signed=not bool(is_total[p])
+            )
+
+    def _add_label(self, fig, x, value, top, bottom, signed) -> None:
+        above = value >= 0
+        self._label_ys["above" if above else "below"].append(top if above else bottom)
+        fig.add_annotation(
+            x=x,
+            y=top if above else bottom,
+            text=self._fmt(value, signed=signed),
+            showarrow=False,
+            yanchor="bottom" if above else "top",
+            yshift=2 if above else -2,
+        )
+
+    def _make_room_for_labels(self, fig) -> None:
+        """Plotly's autorange ignores annotations: extend it so labels at the outermost bars
+        are not clipped (the axis still autoscales, so later changes keep working)."""
+        above, below = self._label_ys["above"], self._label_ys["below"]
+        if not above and not below:
+            return
+        span = max([*above, *below, 0]) - min([*above, *below, 0]) or 1.0
+        include = []
+        if above:
+            include.append(max(above) + 0.08 * span)
+        if below:
+            include.append(min(below) - 0.08 * span)
+        fig.update_layout(yaxis_autorangeoptions_include=include)
 
     def _legend_kwargs(self) -> dict:
         # Only set showlegend when hiding, so that figures stay identical to earlier versions
@@ -365,7 +493,8 @@ class Waterfall:
             marker=self._net_ghost,
             legendgroup=groupname,
             showlegend=False,
-            hovertemplate="Net change: %{y}<extra></extra>",
+            customdata=[self._fmt(v, signed=True) for v in np.nansum(values, axis=1)[mixed]],
+            hovertemplate="Net change: %{customdata}<extra></extra>",
             width=self._barwidth,
             offset=self._offset(groupno),
         )
@@ -409,7 +538,13 @@ class Waterfall:
             legendgrouptitle_text=groupname,
             width=self._barwidth,
             offset=self._offset(groupno),
+            customdata=[[categoryname, f"{categoryname}: {self._fmt(y)}"]],
+            hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]}"
+            f"<extra>{'' if groupname is None else groupname}</extra>",
         )
+        if self._value_labels in ("bar", "both"):
+            center = x + 1 + self._offset(groupno) + self._barwidth / 2
+            self._add_label(fig, center, y, max(y, 0), min(y, 0), signed=False)
 
         self._used_directions.add("total")
         x0 = x + self._offset(groupno)
