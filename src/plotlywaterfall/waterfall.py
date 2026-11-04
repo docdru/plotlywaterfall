@@ -17,7 +17,7 @@ DEFAULT_NET_GHOST: dict[str, Any] = {
 }
 # Share of a sub-step's slot that is filled by its bar; the rest is a small visual gap
 SUBSTEP_FILL = 0.9
-VALUE_LABELS = ("bar", "segment", "both", "none")
+VALUE_LABELS = ("bar", "segment", "both")
 
 
 class Waterfall:
@@ -44,7 +44,7 @@ class Waterfall:
         color_discrete_sequence: list[str] | None = None,
         pattern_shape: str | None = None,
         pattern_shape_map: dict | None = None,
-        value_labels: str | None = "bar",
+        value_labels: str | bool | None = "bar",
         number_format: NumberFormat = None,
         number_prefix: str = "",
         number_suffix: str = "",
@@ -101,7 +101,7 @@ class Waterfall:
             value_labels (str | None, optional): Value labels on the bars. "bar": one label
                 per bar with its change (signed, e.g. "+9") or, for totals, its value, placed
                 above or below the bar. "segment": the value inside every stacked segment
-                (hidden where it does not fit). "both", or None for no labels.
+                (hidden where it does not fit), "both", or None / False for no labels.
                 Defaults to "bar".
             number_format (str | callable | None, optional): Format of numbers in labels and
                 hover texts: a Python format spec for the absolute value (e.g. ",.1f"), or a
@@ -151,13 +151,13 @@ class Waterfall:
             self._net_ghost = None
         else:
             raise TypeError("net_ghost should be a bool or a dict of marker properties")
-        if value_labels is None or value_labels is False:
-            value_labels = "none"
-        if value_labels not in VALUE_LABELS:
+        if value_labels is False:
+            value_labels = None
+        if value_labels is not None and value_labels not in VALUE_LABELS:
             raise ValueError(
-                f"value_labels must be one of {VALUE_LABELS} or None, got {value_labels!r}"
+                f"value_labels must be one of {VALUE_LABELS}, None or False, got {value_labels!r}"
             )
-        self._value_labels = value_labels
+        self._value_labels: str | None = value_labels
         self._fmt = NumberFormatter(number_format, number_prefix, number_suffix)
         self._title = title
         self._labels = dict(labels or {})

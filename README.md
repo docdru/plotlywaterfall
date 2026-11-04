@@ -64,7 +64,7 @@ the step, its category and the running total.
 
 | Argument | Meaning | Default |
 |---|---|---|
-| `value_labels` | `"bar"` (one label per bar, outside), `"segment"` (inside each stacked segment), `"both"` or `None` | `"bar"` |
+| `value_labels` | `"bar"` (one label per bar, outside), `"segment"` (inside each stacked segment), `"both"`, or `None` / `False` for no labels | `"bar"` |
 | `number_format` | Python format spec for the absolute value (e.g. `",.1f"`) or a function | thousands separators, up to two decimals |
 | `number_prefix` / `number_suffix` | Units around the number; the sign stays in front (`-$5M`) | `""` |
 | `title` | Figure title | `None` |

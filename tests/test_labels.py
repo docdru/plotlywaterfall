@@ -91,7 +91,7 @@ def test_sumtotal_gets_a_label():
 
 
 def test_no_labels(df):
-    for value in (None, False, "none"):
+    for value in (None, False):
         fig = Waterfall(df, x="X", y="Y", category="category", value_labels=value).get_fig()
         assert fig.layout.annotations == ()
         assert all(t["text"] is None for t in fig.data)
@@ -115,8 +115,9 @@ def test_both_labels(df):
 
 
 def test_invalid_value_labels(df):
-    with pytest.raises(ValueError, match="value_labels"):
-        Waterfall(df, x="X", y="Y", value_labels="all")
+    for value in ("all", "none", True):
+        with pytest.raises(ValueError, match="value_labels"):
+            Waterfall(df, x="X", y="Y", value_labels=value)
 
 
 def test_labels_use_number_format(df):

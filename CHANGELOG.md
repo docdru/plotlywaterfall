@@ -9,7 +9,7 @@
 - `color="direction"` colours increases, decreases and totals (default green / red / grey) and adds
   a legend for them.
 - Keys of `color_discrete_map` / `pattern_shape_map` that match no value raise a `UserWarning`.
-- **Value labels**: `value_labels` (`"bar"` default, `"segment"`, `"both"`, `None`), with one number
+- **Value labels**: `value_labels` (`"bar"` default, `"segment"`, `"both"`, `None` / `False`), with one number
   format for labels and hover: `number_format` (Python format spec or function), `number_prefix`,
   `number_suffix`. Changes are signed (`+9`, `-7`), totals not.
 - **Hover texts** show the x label, the segment's category and value, the step for split bars and the
