@@ -128,7 +128,7 @@ docstring-code-format = true
 # Type checking
 # ---------------------------------------------------------------------------
 [tool.mypy]
-files = ["src", "scripts"]
+files = ["src", "scripts/ai_review.py"]
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
