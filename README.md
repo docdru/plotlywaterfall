@@ -58,13 +58,37 @@ Resulting graph:
 
 ![Example](https://raw.githubusercontent.com/docdru/plotlywaterfall/main/examples/example.png)
 
+### Mixed signs
+
+Categories of one bar may have different signs, e.g. a subsidy (+1) and a restructuring charge (−4)
+at the same x-value, or a total that combines positive and negative categories. Such a bar is split
+into one narrow sub-step per category that walks from the level where the bar starts to where it
+ends, with a light "net ghost" bar behind it showing the net change:
+
+    df = pd.DataFrame({
+        "X": ["Revenue", "Costs", "Other", "Other"],
+        "Y": [9, -7, 1, -4],
+        "category": ["Operating", "Operating", "Operating", "One-off"],
+    })
+    Waterfall(df, x="X", y="Y", category="category", total=True).get_fig()
+
+Options:
+
+| Argument | Values | Default |
+|---|---|---|
+| `mixed_signs` | `"steps"` (split into sub-steps), `"error"` (raise `NotImplementedError`, the behaviour before 0.10) | `"steps"` |
+| `net_ghost` | `True`, `False`, or a dict of plotly marker properties for the net bar | `True` |
+| `step_order` | `"data"` (order of the categories in the DataFrame), `"positive_first"`, `"largest_first"` | `"data"` |
+
+Bars whose categories share a sign are drawn as normal stacked bars. With several groups each group's
+bar walks on its own; with many groups and categories the sub-steps get narrow, so increase `barwidth`.
+
 
 ## Disclaimer
 
 I might maintain and improve the package. I might also not.
 
-Known open points: 
-- It is not possible to have mixed signs per X-value.
+Known open points:
 - I am not really happy with the interface for defining the colors.
 
 

@@ -97,7 +97,14 @@ def test_raise_error_mixed_sign1():
     )
 
     with pytest.raises(NotImplementedError) as excinfo:
-        Waterfall(df, x="XTest", y="YTest", group="groupTest", category="categoryTest")
+        Waterfall(
+            df,
+            x="XTest",
+            y="YTest",
+            group="groupTest",
+            category="categoryTest",
+            mixed_signs="error",
+        )
     assert "Currently mixed signed categorization is not supported (yet)" in str(excinfo.value)
 
 
@@ -126,7 +133,14 @@ def test_raise_error_mixed_sign3():
         }
     )
     with pytest.raises(NotImplementedError) as excinfo:
-        Waterfall(df, x="XTest", y="YTest", group="groupTest", category="categoryTest")
+        Waterfall(
+            df,
+            x="XTest",
+            y="YTest",
+            group="groupTest",
+            category="categoryTest",
+            mixed_signs="error",
+        )
     assert "Currently mixed signed categorization is not supported (yet)" in str(excinfo.value)
 
 
@@ -152,7 +166,7 @@ def test_mixed_total():
         }
     )
     with pytest.raises(NotImplementedError) as excinfo:
-        Waterfall(df, x="X", y="Y", category="category", total=True).get_fig()
+        Waterfall(df, x="X", y="Y", category="category", total=True, mixed_signs="error").get_fig()
     assert "Currently mixed signed categories in totals are not supported (yet)" in str(
         excinfo.value
     )

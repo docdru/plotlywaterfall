@@ -69,7 +69,7 @@ def test_groups_with_opposite_signed_totals():
     assert totals == {("G1", "c1"): 1, ("G1", "c2"): 2, ("G2", "c1"): -3, ("G2", "c2"): -4}
 
 
-def test_mixed_signed_total_within_one_group_still_rejected():
+def test_mixed_signed_total_within_one_group_rejected_in_error_mode():
     df = pd.DataFrame(
         {
             "X": ["A", "B", "C", "D"],
@@ -83,7 +83,9 @@ def test_mixed_signed_total_within_one_group_still_rejected():
 
     df["group"] = "G1"
     with pytest.raises(NotImplementedError, match="mixed signed categories in totals"):
-        Waterfall(df, x="X", y="Y", category="category", group="group", total=True).get_fig()
+        Waterfall(
+            df, x="X", y="Y", category="category", group="group", total=True, mixed_signs="error"
+        ).get_fig()
 
 
 # --- the caller's subtotals dict must not be modified ------------------------------------
