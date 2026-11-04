@@ -6,9 +6,9 @@
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-## Description 
+## Description
 
-A small package adding simple waterfall plotting capabilities on top of the plotly graphing package. Waterfall graphs are useful to display e.g. financial data such ans cashflow statements in an easily digestible format. 
+A small package adding simple waterfall plotting capabilities on top of the plotly graphing package. Waterfall graphs are useful to display e.g. financial data such as cashflow statements in an easily digestible format. 
 
 While plotly includes basic capabilities to plot waterfall graphs, it ships only limited features. The *plotlywaterfall* package provides simple, plotly-express-style waterfall graphs with grouping, multiple stacked categories and variable colors. 
 
@@ -39,7 +39,7 @@ More examples can be found in the example notebook (https://github.com/docdru/pl
 One can plot this data, with defined colors and automatic creating of total and subtotal, by using: 
 
 
-    from plotlywaterfall.waterfall import Waterfall
+    from plotlywaterfall import Waterfall
     
     colors = {
         "Group1": {"one": "red", "two": "blue"},
@@ -65,7 +65,7 @@ I might maintain and improve the package. I might also not.
 
 Known open points: 
 - It is not possible to have mixed signs per X-value.
-- I am note really happy with the interface for defining the colors.
+- I am not really happy with the interface for defining the colors.
 
 
 ## Development
