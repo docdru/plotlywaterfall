@@ -1,0 +1,194 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # Weekly run catches breakage from new pandas / plotly / numpy releases
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: "1"
+  UV_NO_PROGRESS: "1"
+
+jobs:
+  lint:
+    name: Lint & format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+      - name: Ruff lint
+        run: uv run --locked --only-group lint ruff check --output-format=github
+      - name: Ruff format
+        run: uv run --locked --only-group lint ruff format --check --diff
+      - name: Workflow security audit (zizmor)
+        run: uvx zizmor@1.32.0 --format=github .github/workflows
+
+  typing:
+    name: Type check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+      - name: mypy
+        run: uv run --locked --no-default-groups --group typing mypy
+
+  test:
+    name: Test (py${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
+        # Windows always; macOS only on main / weekly / manual runs, because hosted macOS
+        # runners often queue for minutes and this pure-Python package has no
+        # macOS-specific code paths.
+        include: >-
+          ${{ fromJSON(github.event_name == 'pull_request'
+          && '[{"os": "windows-latest", "python-version": "3.14"}]'
+          || '[{"os": "windows-latest", "python-version": "3.14"}, {"os": "macos-latest", "python-version": "3.14"}]') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+      - name: Run tests with coverage
+        run: >-
+          uv run --locked --no-default-groups --group test
+          pytest --cov --cov-report=term-missing
+      - name: Coverage summary
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
+        shell: bash
+        run: |
+          {
+            echo '### Coverage'
+            echo '```'
+            uv run --locked --no-default-groups --group test coverage report
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  lowest-deps:
+    name: Test (lowest supported dependencies)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: "3.11"
+      - name: Resolve lowest direct dependencies
+        run: uv lock --upgrade --resolution lowest-direct
+      - name: Show resolved versions
+        run: uv tree --no-default-groups --group test --depth 1
+      - name: Run tests
+        # Old releases may emit deprecation warnings that newer ones fixed: show, don't fail
+        run: >-
+          uv run --no-default-groups --group test
+          pytest -W default::DeprecationWarning -W default::FutureWarning
+
+  prerelease-deps:
+    name: Test (pre-release dependencies, informational)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Early warning for upcoming pandas / plotly / numpy releases; not part of the merge gate
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: "3.15"
+      - name: Resolve newest versions including pre-releases
+        run: uv lock --upgrade --prerelease allow
+      - name: Show resolved versions
+        run: uv tree --no-default-groups --group test --depth 1
+      - name: Run tests
+        run: uv run --no-default-groups --group test pytest
+
+  notebook:
+    name: Example notebook
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+      - name: Execute examples/examples.ipynb
+        run: >-
+          uv run --locked --no-default-groups --group test --group notebook
+          pytest --nbmake examples/ -p no:warnings
+
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: Build sdist and wheel
+        run: uv build
+      - name: Check package metadata
+        run: uvx twine check --strict dist/*
+      - name: Smoke-test the built wheel in a clean environment
+        shell: bash
+        run: |
+          uv run --isolated --no-project --with dist/*.whl \
+            python -c "from plotlywaterfall.waterfall import Waterfall; print('import ok')"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  # Single required status check for branch protection
+  all-green:
+    name: All checks passed
+    if: always()
+    needs: [lint, typing, test, lowest-deps, notebook, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Evaluate job results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" != "success" ] && [ "$r" != "skipped" ]; then
+              echo "::error::At least one required job did not succeed"
+              exit 1
+            fi
+          done

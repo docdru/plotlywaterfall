@@ -1,0 +1,66 @@
+name: Release
+
+# Publish to PyPI when a version tag (e.g. v0.9.4) is pushed.
+# Uses PyPI Trusted Publishing (OIDC) – no API token is stored in the repository.
+# One-time setup on pypi.org: Project → Settings → Publishing → add a GitHub
+# publisher with workflow "release.yml" and environment "pypi".
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions: {}
+
+jobs:
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          # no cache in release builds (avoids cache-poisoning)
+          enable-cache: false
+      - name: Verify tag matches package version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION=$(uv run --no-project python -c \
+            "import runpy; print(runpy.run_path('src/plotlywaterfall/__about__.py')['__version__'])")
+          echo "tag=$TAG package=$VERSION"
+          if [ "${TAG#v}" != "$VERSION" ]; then
+            echo "::error::Tag $TAG does not match __version__ $VERSION"
+            exit 1
+          fi
+      - name: Build sdist and wheel
+        run: uv build
+      - name: Check package metadata
+        run: uvx twine check --strict dist/*
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/project/plotlywaterfall/
+    permissions:
+      id-token: write # required for trusted publishing and PEP 740 attestations
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+      - name: Publish (with attestations)
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
