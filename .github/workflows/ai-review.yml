@@ -1,0 +1,50 @@
+name: AI PR Review
+
+# Trigger: plain `pull_request`, not `pull_request_target`.
+# Reviews are limited to PRs whose branch lives in this repository and whose
+# author has write access (see `if:` below). Such authors can already run any
+# workflow with secrets, so `pull_request` adds no exposure, while it avoids the
+# "pwn request" class of attacks that `pull_request_target` invites (zizmor:
+# dangerous-triggers). Fork PRs get no secrets under `pull_request` and are skipped.
+# The script fetches all PR content as text through the GitHub API and never
+# executes, installs or imports anything from the PR.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions: {}
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true # superseded pushes cancel stale reviews
+
+jobs:
+  review:
+    name: AI review (Mistral)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # read changed files and reference docs at the PR head
+      pull-requests: write # create / update the review comment
+    # Skip drafts (reviewed once marked ready), fork PRs, bots, and authors
+    # without write access (keeps strangers from spending API credit).
+    if: >-
+      !github.event.pull_request.draft &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) &&
+      github.event.pull_request.user.type != 'Bot'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/ai_review.py
+          sparse-checkout-cone-mode: false
+
+      # Standard library only: nothing is installed. The runner's python3 is used.
+      - name: Run AI review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          AI_REVIEW_MODEL: ${{ vars.AI_REVIEW_MODEL }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python3 scripts/ai_review.py

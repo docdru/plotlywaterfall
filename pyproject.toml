@@ -97,7 +97,7 @@ packages = ["src/plotlywaterfall"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["src", "tests"]
+src = ["src", "tests", "scripts"]
 extend-exclude = ["examples/*.ipynb"]
 
 [tool.ruff.lint]
@@ -128,7 +128,7 @@ docstring-code-format = true
 # Type checking
 # ---------------------------------------------------------------------------
 [tool.mypy]
-files = ["src"]
+files = ["src", "scripts"]
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
@@ -145,7 +145,7 @@ ignore_missing_imports = true
 # ---------------------------------------------------------------------------
 [tool.pytest.ini_options]
 minversion = "9.0"
-testpaths = ["tests"]
+testpaths = ["tests", "scripts/tests"]
 addopts = [
   "--import-mode=importlib",
   "-ra",

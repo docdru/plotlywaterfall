@@ -96,6 +96,21 @@ Common tasks:
 CI (GitHub Actions) runs lint, type checks, the test suite on Python 3.11–3.15 (Linux, plus Windows; macOS on `main` and the weekly run),
 a test against the lowest supported dependency versions, the example notebook, and a package build.
 
+### AI pull-request review
+
+Pull requests get an automated review comment (correctness and tests, API/docs consistency,
+security and supply chain, surprising changes) from `.github/workflows/ai-review.yml`, which runs
+`scripts/ai_review.py` against the Mistral API. The comment is updated on every push.
+
+- **Setup:** add the repository secret `MISTRAL_API_KEY` (*Settings → Secrets and variables → Actions*).
+  Optionally set the repository variable `AI_REVIEW_MODEL` to override the default model (`mistral-large-2512`).
+- **Scope:** runs for non-draft PRs from branches in this repository by authors with write access;
+  fork, bot and draft PRs are skipped. Mark a draft "Ready for review" to trigger it.
+- **Try locally** (prints the prompt, calls nothing, posts nothing):
+  `GITHUB_REPOSITORY=docdru/plotlywaterfall GITHUB_TOKEN=$(gh auth token) python scripts/ai_review.py --pr 1 --dry-run`
+
+The review is advisory: it is not part of the required checks, and its findings should be verified.
+
 ### Releasing
 
 1. Bump `__version__` in `src/plotlywaterfall/__about__.py` and add a `CHANGELOG.md` entry.
