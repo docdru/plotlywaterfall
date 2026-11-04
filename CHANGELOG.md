@@ -9,6 +9,7 @@
 - `numpy` is now declared as a dependency (it was imported but not declared); dependencies are declared in
   `pyproject.toml` and `requirements.txt` was removed.
 - Code formatted with ruff; no functional changes.
+- Automated AI pull-request review (Mistral) posted as a PR comment; see README "AI pull-request review".
 
 ## [0.9.2.] - 2024-02-20
 - Bugfix line placement in case of empty bars at certain x in other then the first group
