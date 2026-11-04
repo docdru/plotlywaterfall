@@ -40,15 +40,14 @@ One can plot this data, with defined colors and automatic creating of total and 
 
 
     from plotlywaterfall import Waterfall
-    
+
     colors = {
-        "Group1": {"one": "red", "two": "blue"},
-        "Group2": {"one": "salmon", "two": "lightskyblue"},
-        "Group3": "green"
+        "one": "red", "two": "blue", "three": "green",
+        ("Group2", "one"): "salmon", ("Group2", "two"): "lightskyblue",
     }
 
-
-    c = Waterfall(df, x="X", y="Y", category="category", colors=colors, group="group", total=True, subtotals={"C": "Subtotal"})
+    c = Waterfall(df, x="X", y="Y", category="category", group="group", total=True,
+                  subtotals={"C": "Subtotal"}, color_discrete_map=colors)
     fig = c.get_fig()
     fig
 
@@ -57,6 +56,25 @@ One can plot this data, with defined colors and automatic creating of total and 
 Resulting graph:
 
 ![Example](https://raw.githubusercontent.com/docdru/plotlywaterfall/main/examples/example.png)
+
+### Colors
+
+Colours work like in plotly express:
+
+| Argument | Meaning |
+|---|---|
+| `color` | What drives the colour: the category column, the group column, or `"direction"` (increase / decrease / total). Default: the category column if given, else the group column, else `"direction"`. |
+| `color_discrete_map` | Colour per value, e.g. `{"one": "red"}`. `(group, category)` tuples colour one group's category. With `color="direction"` the keys are `"increase"`, `"decrease"`, `"total"` (default green / red / grey). Keys that match no value raise a warning. |
+| `color_discrete_sequence` | Colours for values missing from the map, assigned in order. Default: the colorway of the active plotly template. |
+| `pattern_shape` | The group or category column, to give its values different fill patterns, e.g. colour by category and pattern by group. |
+| `pattern_shape_map` | Pattern per value, e.g. `{"Actual": "/"}`. |
+
+Colours are assigned per value, so a category has the same colour in every group:
+
+    Waterfall(df, x="X", y="Y", category="category", group="group", total=True,
+              pattern_shape="group").get_fig()
+
+The older `colors` argument still works, but is deprecated and will be removed in version 1.0.
 
 ### Mixed signs
 
@@ -87,9 +105,6 @@ bar walks on its own; with many groups and categories the sub-steps get narrow, 
 ## Disclaimer
 
 I might maintain and improve the package. I might also not.
-
-Known open points:
-- I am not really happy with the interface for defining the colors.
 
 
 ## Development

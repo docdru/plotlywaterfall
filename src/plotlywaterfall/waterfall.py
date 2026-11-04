@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
+from plotlywaterfall._coloring import Coloring
+
 DEFAULT_CONNECTOR_LINE: dict[str, Any] = {"color": "darkgrey", "width": 0.75}
 TOTAL_TYPES = ("category", "sumtotal")
 MIXED_SIGNS = ("steps", "error")
@@ -35,6 +37,11 @@ class Waterfall:
         mixed_signs: str = "steps",
         net_ghost: bool | dict = True,
         step_order: str = "data",
+        color: str | None = None,
+        color_discrete_map: dict | None = None,
+        color_discrete_sequence: list[str] | None = None,
+        pattern_shape: str | None = None,
+        pattern_shape_map: dict | None = None,
     ):
         """Instanciate Waterfall object. All configuration is done by handing the correct kwargs.
 
@@ -47,7 +54,9 @@ class Waterfall:
             barwidth (float, optional): Width of bars, should be 0.0 to 1.0. Defaults to 0.3.
             gap (float, optional): Gap between bars of different groups. Defaults to 0.01.
             connector_line (dict, optional): Parameters defining line style for lines connecting bars. Defaults to None, which means dict(color="darkgrey", width=.75).
-            colors (dict | None, optional): dict identifying colors, compare documentation / example. Groups or categories missing from the dict get plotly's default colors. Defaults to None, which uses default colors.
+            colors (dict | None, optional): Deprecated, will be removed in 1.0; use `color` and
+                `color_discrete_map`. dict identifying colors per group, per group and category,
+                or per category. Defaults to None.
             total (bool, optional): If True, calculates the total and adds it as last x-value. Defaults to False.
             total_type (str, optional): How to calculate the total. Can be "category" or "sumtotal". Defaults to "category".
             total_column_name (str, optional): Label of the x-value for total . Defaults to "Total".
@@ -64,6 +73,23 @@ class Waterfall:
             step_order (str, optional): Order of the sub-steps within a split bar: "data"
                 (order of the categories in df), "positive_first" or "largest_first" (by
                 absolute value). Defaults to "data".
+            color (str | None, optional): What drives the bar colours: the group column, the
+                category column or "direction" (increase / decrease / total). Defaults to the
+                category column, else the group column, else "direction".
+            color_discrete_map (dict | None, optional): Colour per value of the `color`
+                dimension, e.g. {"Product A": "red"}. Keys may also be (group, category) tuples
+                to colour one group's category. With color="direction" the keys are
+                "increase", "decrease" and "total". Values not in the map get colours from
+                `color_discrete_sequence`; keys matching no value raise a warning.
+            color_discrete_sequence (list[str] | None, optional): Colours assigned in order
+                to values missing from `color_discrete_map`. Defaults to the colorway of the
+                active plotly template.
+            pattern_shape (str | None, optional): The group or category column, to give its
+                values different fill patterns (e.g. colour by category, pattern by group).
+                Defaults to None (no patterns).
+            pattern_shape_map (dict | None, optional): Pattern per value of `pattern_shape`,
+                e.g. {"Actual": "/"}; plotly shapes are "", "/", "\\", "x", "-", "|", "+"
+                and ".". Defaults to None (assigned in that order).
 
         Raises:
             TypeError: If df is not a DataFrame or subtotals is not a dict.
@@ -85,7 +111,6 @@ class Waterfall:
         self._connector_line = dict(
             DEFAULT_CONNECTOR_LINE if connector_line is None else connector_line
         )
-        self._colors = colors
         self._total_column_name = total_column_name
         if mixed_signs not in MIXED_SIGNS:
             raise ValueError(f"mixed_signs must be one of {MIXED_SIGNS}, got {mixed_signs!r}")
@@ -102,6 +127,18 @@ class Waterfall:
         else:
             raise TypeError("net_ghost should be a bool or a dict of marker properties")
         self._test_df()
+        self._coloring = Coloring(
+            df,
+            group=group,
+            category=category,
+            color=color,
+            color_discrete_map=color_discrete_map,
+            color_discrete_sequence=color_discrete_sequence,
+            pattern_shape=pattern_shape,
+            pattern_shape_map=pattern_shape_map,
+            legacy_colors=colors,
+            total_name=total_column_name,
+        )
         if subtotals is None:
             subtotals = {}
         elif not isinstance(subtotals, dict):
@@ -127,9 +164,10 @@ class Waterfall:
             Figure: Configured plotly.graph_objects.Figure instance
         """
 
-        # tdf = self._get_df_merged_w_color()
         tdf = self._df.copy()
         X = self._get_x_values(tdf)
+        self._coloring.resolve()
+        self._used_directions: set[str] = set()
 
         fig = go.Figure()
 
@@ -146,6 +184,9 @@ class Waterfall:
             X = pd.concat(
                 [X, pd.DataFrame({self._x: X[self._x].max() + 1}, index=[self._total_column_name])]
             )
+
+        for legend_entry in self._coloring.direction_legend(self._used_directions):
+            fig.add_bar(**legend_entry)
 
         fig.update_layout(xaxis={"tickmode": "array", "tickvals": X[self._x], "ticktext": X.index})
         return fig
@@ -188,15 +229,6 @@ class Waterfall:
         step = self._barwidth + self._gap / 2
         return -step * self.__totalgroups / 2 + step * groupno
 
-    def _color(self, groupname: Any, categoryname: Any) -> Any:
-        """Look up the color for a group/category; None means plotly's default color."""
-        color = self._colors
-        if isinstance(color, dict) and groupname in color:
-            color = color[groupname]
-        if isinstance(color, dict) and categoryname in color:
-            color = color[categoryname]
-        return None if isinstance(color, dict) else color
-
     def _get_x_values(self, tdf):
         # Define x axis and include subtotals and totals
         labels = list(tdf[self._x].unique())
@@ -232,6 +264,7 @@ class Waterfall:
             self._add_net_ghost(fig, X, level_values, values, mixed, groupno, groupname)
 
         x = X[self._x]
+        is_total = X.makeTotal.to_numpy(dtype=bool)
         for c, (categoryname, _) in enumerate(categories):
             if categoryname is None:
                 name = groupname
@@ -245,7 +278,8 @@ class Waterfall:
                 base=bases[:, c],
                 offsetgroup=groupno,
                 name=name,
-                marker_color=self._color(groupname, categoryname),
+                marker=self._coloring.marker(groupname, categoryname, values[:, c], is_total),
+                **self._legend_kwargs(),
                 legendgroup=groupname,
                 legendgrouptitle_text=groupnametitle,
                 # Arrays only where a bar is split into sub-steps, so that ordinary charts
@@ -253,7 +287,23 @@ class Waterfall:
                 width=widths[:, c] if mixed.any() else self._barwidth,
                 offset=offsets[:, c] if mixed.any() else self._offset(groupno),
             )
+        self._track_directions(values, is_total)
         self._add_lines(fig, X, group, groupno)
+
+    def _legend_kwargs(self) -> dict:
+        # Only set showlegend when hiding, so that figures stay identical to earlier versions
+        return {} if self._coloring.show_trace_legend else {"showlegend": False}
+
+    def _track_directions(self, values, is_total) -> None:
+        """Remember which of increase / decrease / total occur, for the direction legend."""
+        present = ~np.isnan(values)
+        if (present & is_total[:, None]).any():
+            self._used_directions.add("total")
+        steps = values[present & ~is_total[:, None]]
+        if (steps >= 0).any():
+            self._used_directions.add("increase")
+        if (steps < 0).any():
+            self._used_directions.add("decrease")
 
     def _category_values(self, X, category) -> np.ndarray:
         """Segment heights of one category per x-position; totals hold the running sum."""
@@ -353,13 +403,15 @@ class Waterfall:
             y=[y],
             offsetgroup=groupno,
             name=categoryname,
-            marker_color=self._color(groupname, categoryname),
+            marker=self._coloring.total_marker(groupname, categoryname),
+            **self._legend_kwargs(),
             legendgroup=groupname,
             legendgrouptitle_text=groupname,
             width=self._barwidth,
             offset=self._offset(groupno),
         )
 
+        self._used_directions.add("total")
         x0 = x + self._offset(groupno)
         x1 = x + 1 + self._offset(groupno) + self._barwidth
         fig.add_shape(x0=x0, x1=x1, y0=y, y1=y, line=self._connector_line)

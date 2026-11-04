@@ -77,9 +77,10 @@ def test_colors():
         "Group1": {"one": "rgb(0,0,0)", "two": "rgb(0,0,1)"},
         "Group2": {"one": "rgb(0,0,2)", "two": "rgb(0,0,3)"},
     }
-    c = Waterfall(
-        df, x="XTest", y="YTest", category="categoryTest", group="groupTest", colors=colors
-    )
+    with pytest.warns(DeprecationWarning, match="colors argument is deprecated"):
+        c = Waterfall(
+            df, x="XTest", y="YTest", category="categoryTest", group="groupTest", colors=colors
+        )
     fig = c.get_fig()
     for i in fig.data:
         assert i["marker"]["color"] == colors[i["legendgroup"]][i["name"]]
@@ -310,16 +311,17 @@ def test_sumtotal_colorgroup():
         }
     )
     colors = {"Group1": "blue", "Group2": "red"}
-    fig = Waterfall(
-        df,
-        x="X",
-        y="Y",
-        category="category",
-        group="group",
-        total=True,
-        total_type="sumtotal",
-        colors=colors,
-    ).get_fig()
+    with pytest.warns(DeprecationWarning, match="colors argument is deprecated"):
+        fig = Waterfall(
+            df,
+            x="X",
+            y="Y",
+            category="category",
+            group="group",
+            total=True,
+            total_type="sumtotal",
+            colors=colors,
+        ).get_fig()
     for i in fig.data:
         assert i["marker"]["color"] == colors[i["legendgroup"]]
 
