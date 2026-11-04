@@ -159,7 +159,7 @@ a test against the lowest supported dependency versions, the docs site, and a pa
 The **docs site** job executes `examples/examples.ipynb`, renders it to HTML with interactive charts and
 renders the README image from `examples/readme_example.py` (keep it in sync with the README code).
 Pull requests get the result as the `docs-site` artifact of the CI run; on `main` it is published to
-[GitHub Pages]({PAGES}/). Nothing generated is committed. One-time setup: *Settings → Pages →
+[GitHub Pages](https://docdru.github.io/plotlywaterfall/). Nothing generated is committed. One-time setup: *Settings → Pages →
 Build and deployment → Source: GitHub Actions*.
 
 ### AI pull-request review
