@@ -5,6 +5,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/plotlywaterfall)](https://pypi.org/project/plotlywaterfall/)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Examples](https://img.shields.io/badge/examples-gallery-2a78d6)](https://docdru.github.io/plotlywaterfall/)
 
 ## Description
 
@@ -24,38 +25,41 @@ uv add plotlywaterfall
 
 ## Usage
 
-More examples can be found in the example notebook (https://github.com/docdru/plotlywaterfall/blob/main/examples/examples.ipynb). Let's use this dataframe for a simple yet complete example: 
+**[Example gallery](https://docdru.github.io/plotlywaterfall/)** with interactive charts for every feature (rendered from
+[`examples/examples.ipynb`](https://github.com/docdru/plotlywaterfall/blob/main/examples/examples.ipynb) by CI).
 
-    df = pd.DataFrame({
-        "X": ["A", "B", "C"]*4 + ["D", "D" ], 
-        "Y": [4, 1, 8, 7, 3, 2] + [i-1 for i in [4, 1, 8, 7, 3, 2]] + [8, 5],
-        "category": ["one"]*3+["two"]*3 + ["one"]*3+["two"]*3 + ["two", "three"],
-        "group": ["Group1"]*6 + ["Group2"]*6 + ["Group2", "Group3"]
-    })
+A complete example with groups, stacked categories, a subtotal and a total:
 
-![DF](https://raw.githubusercontent.com/docdru/plotlywaterfall/main/examples/example_df.png)
+```python
+import pandas as pd
 
+from plotlywaterfall import Waterfall
 
-One can plot this data, with defined colors and automatic creating of total and subtotal, by using: 
-
-
-    from plotlywaterfall import Waterfall
-
-    colors = {
-        "one": "red", "two": "blue", "three": "green",
-        ("Group2", "one"): "salmon", ("Group2", "two"): "lightskyblue",
+df = pd.DataFrame(
+    {
+        "X": ["A", "B", "C"] * 4 + ["D", "D"],
+        "Y": [4, 1, 8, 7, 3, 2] + [i - 1 for i in [4, 1, 8, 7, 3, 2]] + [8, 5],
+        "category": ["one"] * 3 + ["two"] * 3 + ["one"] * 3 + ["two"] * 3 + ["two", "three"],
+        "group": ["Group1"] * 6 + ["Group2"] * 6 + ["Group2", "Group3"],
     }
+)
 
-    c = Waterfall(df, x="X", y="Y", category="category", group="group", total=True,
-                  subtotals={"C": "Subtotal"}, color_discrete_map=colors)
-    fig = c.get_fig()
-    fig
+fig = Waterfall(
+    df,
+    x="X",
+    y="Y",
+    category="category",
+    group="group",
+    total=True,
+    subtotals={"C": "Subtotal"},
+    color_discrete_map={"one": "#2a78d6", "two": "#eb6834", "three": "#1baf7a"},
+    pattern_shape="group",
+).get_fig()
+fig.update_layout(template="plotly_white")
+fig
+```
 
-
-
-Resulting graph:
-
-![Example](https://raw.githubusercontent.com/docdru/plotlywaterfall/main/examples/example.png)
+![Example waterfall chart with three groups, stacked categories, a subtotal and a total](https://docdru.github.io/plotlywaterfall/images/readme-example.png)
 
 ### Labels, number format and hover
 
@@ -145,11 +149,18 @@ Common tasks:
 | Format | `uv run ruff format` |
 | Type check | `uv run mypy` |
 | Execute example notebook | `uv run pytest --nbmake examples/ -p no:warnings` |
+| Build the docs site (gallery + README image) | `uv run --group notebook --with nbconvert --with kaleido python scripts/build_docs.py --out site` |
 | Open notebooks | `uv run --with jupyterlab jupyter lab` |
 | Build sdist + wheel | `uv build` |
 
 CI (GitHub Actions) runs lint, type checks, the test suite on Python 3.11–3.15 (Linux, plus Windows; macOS on `main` and the weekly run),
-a test against the lowest supported dependency versions, the example notebook, and a package build.
+a test against the lowest supported dependency versions, the docs site, and a package build.
+
+The **docs site** job executes `examples/examples.ipynb`, renders it to HTML with interactive charts and
+renders the README image from `examples/readme_example.py` (keep it in sync with the README code).
+Pull requests get the result as the `docs-site` artifact of the CI run; on `main` it is published to
+[GitHub Pages]({PAGES}/). Nothing generated is committed. One-time setup: *Settings → Pages →
+Build and deployment → Source: GitHub Actions*.
 
 ### AI pull-request review
 
