@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Changed
+- The AI pull-request review now uses the shared action
+  [docdru/ai-review](https://github.com/docdru/ai-review), configured in `.github/ai-review.toml`.
+  Findings carry a P0–P3 severity and the verdict follows from them. The `AI_REVIEW_MODEL`
+  repository variable is no longer used: the model is set in the config.
+
 ## [1.2.0] - 2026-11-05
 
 ### Added

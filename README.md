@@ -203,15 +203,18 @@ Build and deployment → Source: GitHub Actions*.
 ### AI pull-request review
 
 Pull requests get an automated review comment (correctness and tests, API/docs consistency,
-security and supply chain, surprising changes) from `.github/workflows/ai-review.yml`, which runs
-`scripts/ai_review.py` against the Mistral API. The comment is updated on every push.
+security and supply chain, surprising changes) from the shared action
+[docdru/ai-review](https://github.com/docdru/ai-review), called by `.github/workflows/ai-review.yml`
+with the Mistral API. The comment is updated on every push.
 
 - **Setup:** add the repository secret `MISTRAL_API_KEY` (*Settings → Secrets and variables → Actions*).
-  Optionally set the repository variable `AI_REVIEW_MODEL` to override the default model (`mistral-large-2512`).
+- **Configuration:** `.github/ai-review.toml` holds this project's review instructions, reference
+  documents and model. It is read from `main`, so a change takes effect after it is merged.
 - **Scope:** runs for non-draft PRs from branches in this repository by authors with write access;
   fork, bot and draft PRs are skipped. Mark a draft "Ready for review" to trigger it.
-- **Try locally** (prints the prompt, calls nothing, posts nothing):
-  `GITHUB_REPOSITORY=docdru/plotlywaterfall GITHUB_TOKEN=$(gh auth token) python scripts/ai_review.py --pr 1 --dry-run`
+- **Try locally** (prints the prompt size, calls nothing, posts nothing), from a checkout of
+  docdru/ai-review:
+  `GITHUB_TOKEN=$(gh auth token) python3 ai_review.py --repo docdru/plotlywaterfall --pr 1 --dry-run --config ../plotlywaterfall/.github/ai-review.toml`
 
 The review is advisory: it is not part of the required checks, and its findings should be verified.
 
