@@ -6,7 +6,7 @@ file and the README code block in sync.
 
 import pandas as pd
 
-from plotlywaterfall import Waterfall
+from plotlywaterfall import waterfall
 
 df = pd.DataFrame(
     {
@@ -17,7 +17,7 @@ df = pd.DataFrame(
     }
 )
 
-fig = Waterfall(
+fig = waterfall(
     df,
     x="X",
     y="Y",
@@ -27,5 +27,5 @@ fig = Waterfall(
     subtotals={"C": "Subtotal"},
     color_discrete_map={"one": "#2a78d6", "two": "#eb6834", "three": "#1baf7a"},
     pattern_shape="group",
-).get_fig()
+)
 fig.update_layout(template="plotly_white")

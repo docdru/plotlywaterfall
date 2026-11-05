@@ -550,3 +550,71 @@ class Waterfall:
         x0 = x + self._offset(groupno)
         x1 = x + 1 + self._offset(groupno) + self._barwidth
         fig.add_shape(x0=x0, x1=x1, y0=y, y1=y, line=self._connector_line)
+
+
+def waterfall(
+    df: pd.DataFrame,
+    x: str,
+    y: str,
+    *,
+    group: str | None = None,
+    category: str | None = None,
+    total: bool = False,
+    total_type: str = "category",
+    total_column_name: str = "Total",
+    subtotals: dict | None = None,
+    color: str | None = None,
+    color_discrete_map: dict | None = None,
+    color_discrete_sequence: list[str] | None = None,
+    pattern_shape: str | None = None,
+    pattern_shape_map: dict | None = None,
+    value_labels: str | bool | None = "bar",
+    number_format: NumberFormat = None,
+    number_prefix: str = "",
+    number_suffix: str = "",
+    title: str | None = None,
+    labels: dict | None = None,
+    mixed_signs: str = "steps",
+    net_ghost: bool | dict = True,
+    step_order: str = "data",
+    barwidth: float = 0.3,
+    gap: float = 0.01,
+    connector_line: dict | None = None,
+) -> go.Figure:
+    """Create a waterfall chart in one call, like plotly express' ``px.bar``.
+
+    ``waterfall(df, x="X", y="Y", ...)`` is the same as
+    ``Waterfall(df, x="X", y="Y", ...).get_fig()``; all arguments are described in
+    :class:`Waterfall`. Use the class to add subtotals step by step with ``add_subtotal``.
+
+    Returns:
+        go.Figure: the waterfall chart.
+    """
+    return Waterfall(
+        df,
+        x=x,
+        y=y,
+        group=group,
+        category=category,
+        total=total,
+        total_type=total_type,
+        total_column_name=total_column_name,
+        subtotals=subtotals,
+        color=color,
+        color_discrete_map=color_discrete_map,
+        color_discrete_sequence=color_discrete_sequence,
+        pattern_shape=pattern_shape,
+        pattern_shape_map=pattern_shape_map,
+        value_labels=value_labels,
+        number_format=number_format,
+        number_prefix=number_prefix,
+        number_suffix=number_suffix,
+        title=title,
+        labels=labels,
+        mixed_signs=mixed_signs,
+        net_ghost=net_ghost,
+        step_order=step_order,
+        barwidth=barwidth,
+        gap=gap,
+        connector_line=connector_line,
+    ).get_fig()
