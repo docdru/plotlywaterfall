@@ -1,4 +1,4 @@
-"""x-axis order, date labels, accounting negatives and number units (1.0.1)."""
+"""x-axis order, date labels, accounting negatives and number units (1.1.0)."""
 
 import datetime
 
