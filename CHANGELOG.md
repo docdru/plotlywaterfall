@@ -2,14 +2,36 @@
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-05
+
+First stable release: a one-call `waterfall()` function, mixed signs within a bar, a plotly-express
+style colour API, value labels and hover texts, type hints, and an
+[example gallery](https://docdru.github.io/plotlywaterfall/).
+
+### Upgrading from 0.9
+- **`colors` was removed.** Use `color` and `color_discrete_map`:
+
+  | 0.9 `colors=` | 1.0 |
+  |---|---|
+  | `{"one": "red", "two": "blue"}` (per category) | `color_discrete_map={"one": "red", "two": "blue"}` |
+  | `{"Group1": "red", "Group2": "blue"}` (per group) | `color="group", color_discrete_map={"Group1": "red", "Group2": "blue"}` (with your group column name) |
+  | `{"Group1": {"one": "red"}}` (per group and category) | `color_discrete_map={("Group1", "one"): "red"}` |
+
+- **Charts look different by default:** bars carry value labels (`value_labels=None` turns them
+  off), charts without category and group are coloured by direction (green / red / grey), a category
+  keeps its colour across groups, and the y-axis is titled with the y column.
+- **Mixed signs within one bar are drawn** as sub-steps instead of raising `NotImplementedError`;
+  `mixed_signs="error"` restores the old behaviour.
+- **Python 3.11 or newer** is required.
+
 ### Added
 - **Type hints throughout** and a `py.typed` marker, so type checkers (mypy, pyright) use the
   package's annotations.
 - Options with a fixed set of values (`total_type`, `mixed_signs`, `step_order`, `value_labels`) are
   typed as `Literal`s, so editors suggest the valid values and type checkers catch typos.
 - **`waterfall(df, x=..., y=..., ...)`**: one call that returns the figure, like plotly express'
-  `px.bar`. Same arguments as `Waterfall` (keyword-only after `x` and `y`, without the deprecated
-  `colors`); `Waterfall` stays for building subtotals step by step.
+  `px.bar`. Same arguments as `Waterfall` (keyword-only after `x` and `y`); `Waterfall` stays for
+  building subtotals step by step.
 - **New colour API in plotly-express style**: `color` (category column, group column or
   `"direction"`), `color_discrete_map` (value → colour; `(group, category)` tuples for one group's
   category), `color_discrete_sequence`, `pattern_shape` and `pattern_shape_map`.
@@ -44,9 +66,8 @@
   (`from plotlywaterfall.waterfall import Waterfall` keeps working); `plotlywaterfall.__version__` added.
 - Internal cleanup: removed dead code in `add_subtotal`, one helper for bar offsets and one for colors.
 
-### Deprecated
-- The `colors` argument; it still works, emits a `DeprecationWarning` and will be removed in 1.0.
-  See the README for the replacement.
+### Removed
+- The `colors` argument, replaced by `color` / `color_discrete_map` (see "Upgrading from 0.9").
 
 ### Fixed
 - `total_type="sumtotal"` with groups raised `KeyError: 'Y'` unless the value column was named `Y`.
@@ -54,8 +75,6 @@
   "mixed signed categories in totals"; the sign check now only compares stacked bars within one group.
 - The `subtotals` dict passed by the caller is no longer modified (with `total=True` it used to gain
   the total, which added an extra bar when the dict was reused).
-- Colors: a `colors` dict that lacks a group or category now falls back to plotly's default color
-  for it instead of failing with a long plotly validation error.
 - The `connector_line` default is no longer a dict shared between instances.
 
 ### Development
@@ -67,7 +86,6 @@
 - GitHub Actions CI: lint, type check, tests on Python 3.11–3.15 (Linux/Windows/macOS), lowest-dependency and
   pre-release dependency jobs, example-notebook execution, package build; weekly scheduled run.
 - Automated PyPI releases on version tags via Trusted Publishing with attestations; Dependabot for actions and dependencies.
-- Code formatted with ruff; no functional changes.
 - Automated AI pull-request review (Mistral) posted as a PR comment; see README "AI pull-request review".
 
 ## [0.9.3] - 2024-02-20

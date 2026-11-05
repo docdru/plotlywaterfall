@@ -49,31 +49,14 @@ class Coloring:
         color_discrete_sequence: Sequence[str] | None,
         pattern_shape: str | None,
         pattern_shape_map: dict | None,
-        legacy_colors: Any,
         total_name: str = "Total",
     ):
         self._group = group
         self._category = category
         self._total_name = total_name
-        self._legacy = legacy_colors
         self._map = dict(color_discrete_map or {})
         self._sequence = list(color_discrete_sequence) if color_discrete_sequence else None
         self._pattern_map = dict(pattern_shape_map or {})
-
-        if legacy_colors is not None:
-            if color is not None or color_discrete_map or color_discrete_sequence:
-                raise ValueError(
-                    "colors cannot be combined with color, color_discrete_map or "
-                    "color_discrete_sequence; use only the new arguments"
-                )
-            warnings.warn(
-                "The colors argument is deprecated and will be removed in plotlywaterfall 1.0. "
-                "Use color= (which column drives the colour: category, group or 'direction') "
-                "and color_discrete_map={value: colour} instead; (group, category) tuples as "
-                "keys set the colour of one group's category.",
-                DeprecationWarning,
-                stacklevel=3,
-            )
 
         dimensions = [c for c in (category, group) if c is not None]
         if color is None:
@@ -93,8 +76,7 @@ class Coloring:
 
         self._color_values = [] if color == DIRECTION else list(df[color].unique())
         self._pattern_values = [] if pattern_shape is None else list(df[pattern_shape].unique())
-        if legacy_colors is None:
-            self._warn_unknown_keys(df)
+        self._warn_unknown_keys(df)
 
     # ------------------------------------------------------------------ validation
 
@@ -144,14 +126,6 @@ class Coloring:
             self._value_patterns[value] = DEFAULT_PATTERN_SHAPES[i % len(DEFAULT_PATTERN_SHAPES)]
         self._value_patterns.update(self._pattern_map)
 
-    def _legacy_color(self, groupname: Any, categoryname: Any) -> Any:
-        color = self._legacy
-        if isinstance(color, dict) and groupname in color:
-            color = color[groupname]
-        if isinstance(color, dict) and categoryname in color:
-            color = color[categoryname]
-        return None if isinstance(color, dict) else color
-
     def _pattern(self, groupname: Any, categoryname: Any) -> str | None:
         if self.pattern_shape is None:
             return None
@@ -166,9 +140,8 @@ class Coloring:
         self, groupname: Any, categoryname: Any, values: np.ndarray, is_total: np.ndarray
     ) -> dict:
         """Marker of one trace (one group/category combination over all x-positions)."""
-        if self._legacy is not None:
-            color: Any = self._legacy_color(groupname, categoryname)
-        elif self.color == DIRECTION:
+        color: Any
+        if self.color == DIRECTION:
             color = self._direction(values, is_total)
         elif (groupname, categoryname) in self._map:
             color = self._map[(groupname, categoryname)]
@@ -183,9 +156,8 @@ class Coloring:
 
     def total_marker(self, groupname: Any, total_name: str) -> dict:
         """Marker of a sum-total bar (total_type="sumtotal")."""
-        if self._legacy is not None:
-            color: Any = self._legacy_color(groupname, total_name)
-        elif self.color == DIRECTION:
+        color: Any
+        if self.color == DIRECTION:
             color = self._direction_colors["total"]
         elif (groupname, total_name) in self._map:
             color = self._map[(groupname, total_name)]
@@ -204,11 +176,11 @@ class Coloring:
     def show_trace_legend(self) -> bool:
         """In direction mode bars carry several colours: the legend explains the directions
         instead, plus the patterns if a pattern dimension is set."""
-        return self._legacy is not None or self.color != DIRECTION or self.pattern_shape is not None
+        return self.color != DIRECTION or self.pattern_shape is not None
 
     def direction_legend(self, used_kinds: set[str]) -> list[dict]:
         """Legend-only bar traces for increase / decrease / total in direction mode."""
-        if self._legacy is not None or self.color != DIRECTION:
+        if self.color != DIRECTION:
             return []
         return [
             {

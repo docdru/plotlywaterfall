@@ -9,8 +9,6 @@ import pytest
 import plotlywaterfall
 from plotlywaterfall import Waterfall, waterfall
 
-DEPRECATED = {"colors"}
-
 
 @pytest.fixture
 def df():
@@ -44,11 +42,11 @@ def test_returns_the_same_figure_as_the_class(df):
 
 
 def test_signature_mirrors_the_class():
-    """Every (non-deprecated) argument of Waterfall exists in waterfall() with the same default
+    """Every argument of Waterfall exists in waterfall() with the same default
     and annotation, so the two cannot drift apart."""
     cls = inspect.signature(Waterfall.__init__).parameters
     fn = inspect.signature(waterfall).parameters
-    expected = {name for name in cls if name != "self"} - DEPRECATED
+    expected = {name for name in cls if name != "self"}
     assert set(fn) == expected
     for name in expected:
         assert fn[name].default == cls[name].default, name
@@ -60,7 +58,7 @@ def test_options_are_keyword_only(df):
         waterfall(df, "X", "Y", "group")  # type: ignore[misc]
 
 
-def test_deprecated_colors_is_not_offered(df):
+def test_removed_colors_argument_is_not_offered(df):
     with pytest.raises(TypeError):
         waterfall(df, x="X", y="Y", colors={"c1": "red"})  # type: ignore[call-arg]
 

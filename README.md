@@ -98,7 +98,8 @@ Colours are assigned per value, so a category has the same colour in every group
     waterfall(df, x="X", y="Y", category="category", group="group", total=True,
               pattern_shape="group")
 
-The older `colors` argument still works, but is deprecated and will be removed in version 1.0.
+Coming from version 0.9? The `colors` argument was replaced by `color` / `color_discrete_map`; see
+[Upgrading from 0.9](https://github.com/docdru/plotlywaterfall/blob/main/CHANGELOG.md#upgrading-from-09).
 
 ### Mixed signs
 
@@ -118,7 +119,7 @@ Options:
 
 | Argument | Values | Default |
 |---|---|---|
-| `mixed_signs` | `"steps"` (split into sub-steps), `"error"` (raise `NotImplementedError`, the behaviour before 0.10) | `"steps"` |
+| `mixed_signs` | `"steps"` (split into sub-steps), `"error"` (raise `NotImplementedError`, the behaviour before 1.0) | `"steps"` |
 | `net_ghost` | `True`, `False`, or a dict of plotly marker properties for the net bar | `True` |
 | `step_order` | `"data"` (order of the categories in the DataFrame), `"positive_first"`, `"largest_first"` | `"data"` |
 

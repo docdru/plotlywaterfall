@@ -142,16 +142,6 @@ def test_invalid_total_type():
         Waterfall(df, x="X", y="Y", total=True, total_type="sum")
 
 
-def test_legacy_colors_missing_a_category_falls_back_to_default():
-    df = pd.DataFrame({"X": ["A", "A"], "Y": [1, 2], "category": ["one", "two"]})
-    with pytest.warns(DeprecationWarning, match="colors argument is deprecated"):
-        wf = Waterfall(df, x="X", y="Y", category="category", colors={"one": "red"})
-    fig = wf.get_fig()
-
-    colors = {trace["name"]: trace["marker"]["color"] for trace in fig.data}
-    assert colors == {"one": "red", "two": None}
-
-
 # --- defaults are not shared between instances -------------------------------------------
 
 

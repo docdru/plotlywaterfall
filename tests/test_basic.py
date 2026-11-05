@@ -74,16 +74,22 @@ def test_colors():
     )
 
     colors = {
-        "Group1": {"one": "rgb(0,0,0)", "two": "rgb(0,0,1)"},
-        "Group2": {"one": "rgb(0,0,2)", "two": "rgb(0,0,3)"},
+        ("Group1", "one"): "rgb(0,0,0)",
+        ("Group1", "two"): "rgb(0,0,1)",
+        ("Group2", "one"): "rgb(0,0,2)",
+        ("Group2", "two"): "rgb(0,0,3)",
     }
-    with pytest.warns(DeprecationWarning, match="colors argument is deprecated"):
-        c = Waterfall(
-            df, x="XTest", y="YTest", category="categoryTest", group="groupTest", colors=colors
-        )
+    c = Waterfall(
+        df,
+        x="XTest",
+        y="YTest",
+        category="categoryTest",
+        group="groupTest",
+        color_discrete_map=colors,
+    )
     fig = c.get_fig()
     for i in fig.data:
-        assert i["marker"]["color"] == colors[i["legendgroup"]][i["name"]]
+        assert i["marker"]["color"] == colors[(i["legendgroup"], i["name"])]
 
 
 def test_raise_error_mixed_sign1():
@@ -311,17 +317,17 @@ def test_sumtotal_colorgroup():
         }
     )
     colors = {"Group1": "blue", "Group2": "red"}
-    with pytest.warns(DeprecationWarning, match="colors argument is deprecated"):
-        fig = Waterfall(
-            df,
-            x="X",
-            y="Y",
-            category="category",
-            group="group",
-            total=True,
-            total_type="sumtotal",
-            colors=colors,
-        ).get_fig()
+    fig = Waterfall(
+        df,
+        x="X",
+        y="Y",
+        category="category",
+        group="group",
+        total=True,
+        total_type="sumtotal",
+        color="group",
+        color_discrete_map=colors,
+    ).get_fig()
     for i in fig.data:
         assert i["marker"]["color"] == colors[i["legendgroup"]]
 
