@@ -50,6 +50,8 @@
 - The `connector_line` default is no longer a dict shared between instances.
 
 ### Development
+- Example gallery: CI executes the example notebook and publishes it as HTML with interactive charts on
+  GitHub Pages (pull requests: `docs-site` artifact); the README image is rendered by CI as well.
 - Modern development setup: uv with `uv.lock`, PEP 735 dependency groups, ruff (lint + format), mypy, pre-commit.
 - GitHub Actions CI: lint, type check, tests on Python 3.11–3.15 (Linux/Windows/macOS), lowest-dependency and
   pre-release dependency jobs, example-notebook execution, package build; weekly scheduled run.
