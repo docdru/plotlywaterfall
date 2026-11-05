@@ -254,7 +254,6 @@ def test_unknown_pattern_keys_warn(grouped):
         {"color": "X"},
         {"color": "nope"},
         {"pattern_shape": "Y"},
-        {"colors": {"A": "red"}, "color": "category"},
     ],
 )
 def test_invalid_colour_arguments(grouped, kwargs):
@@ -262,20 +261,6 @@ def test_invalid_colour_arguments(grouped, kwargs):
         Waterfall(grouped, x="X", y="Y", category="category", group="group", **kwargs)
 
 
-def test_legacy_colors_warn_but_still_work(grouped):
-    with pytest.warns(DeprecationWarning, match="removed in plotlywaterfall 1.0"):
-        wf = Waterfall(
-            grouped,
-            x="X",
-            y="Y",
-            category="category",
-            group="group",
-            colors={"Plan": {"A": "red", "B": "blue"}, "Actual": "green"},
-        )
-    colors = _colors(wf.get_fig())
-    assert colors == {
-        ("Plan", "A"): "red",
-        ("Plan", "B"): "blue",
-        ("Actual", "A"): "green",
-        ("Actual", "B"): "green",
-    }
+def test_colors_argument_was_removed(grouped):
+    with pytest.raises(TypeError, match="colors"):
+        Waterfall(grouped, x="X", y="Y", colors={"A": "red"})  # type: ignore[call-arg]

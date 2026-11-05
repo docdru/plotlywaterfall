@@ -35,7 +35,6 @@ class Waterfall:
         barwidth: float = 0.3,
         gap: float = 0.01,
         connector_line: dict | None = None,
-        colors: dict | None = None,
         total: bool = False,
         total_type: TotalType = "category",
         total_column_name: str = "Total",
@@ -66,9 +65,6 @@ class Waterfall:
             barwidth (float, optional): Width of bars, should be 0.0 to 1.0. Defaults to 0.3.
             gap (float, optional): Gap between bars of different groups. Defaults to 0.01.
             connector_line (dict, optional): Parameters defining line style for lines connecting bars. Defaults to None, which means dict(color="darkgrey", width=.75).
-            colors (dict | None, optional): Deprecated, will be removed in 1.0; use `color` and
-                `color_discrete_map`. dict identifying colors per group, per group and category,
-                or per category. Defaults to None.
             total (bool, optional): If True, calculates the total and adds it as last x-value. Defaults to False.
             total_type (str, optional): How to calculate the total. Can be "category" or "sumtotal". Defaults to "category".
             total_column_name (str, optional): Label of the x-value for total . Defaults to "Total".
@@ -77,7 +73,7 @@ class Waterfall:
                 different signs (e.g. +1 and -4 at the same x, or in a total). "steps" splits
                 the bar into one narrow sub-step per category that walks from the bar's start
                 level to its end level. "error" raises NotImplementedError (behaviour before
-                0.10). Bars whose categories share a sign are drawn as stacked bars either way.
+                1.0). Bars whose categories share a sign are drawn as stacked bars either way.
                 Defaults to "steps".
             net_ghost (bool | dict, optional): For bars split into sub-steps: draw a light bar
                 behind them spanning the net change of the step. A dict is used as plotly
@@ -175,7 +171,6 @@ class Waterfall:
             color_discrete_sequence=color_discrete_sequence,
             pattern_shape=pattern_shape,
             pattern_shape_map=pattern_shape_map,
-            legacy_colors=colors,
             total_name=total_column_name,
         )
         if subtotals is None:
