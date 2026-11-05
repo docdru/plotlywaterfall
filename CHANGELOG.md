@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [1.0.1] - 2026-11-05
+## [1.1.0] - 2026-11-05
 
 ### Fixed
 - **Wrong levels with groups whose rows are in a different order**: running levels were accumulated
