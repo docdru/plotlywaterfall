@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 ### Added
+- **Type hints throughout** and a `py.typed` marker, so type checkers (mypy, pyright) use the
+  package's annotations.
 - **`waterfall(df, x=..., y=..., ...)`**: one call that returns the figure, like plotly express'
   `px.bar`. Same arguments as `Waterfall` (keyword-only after `x` and `y`, without the deprecated
   `colors`); `Waterfall` stays for building subtotals step by step.
@@ -55,6 +57,8 @@
 - The `connector_line` default is no longer a dict shared between instances.
 
 ### Development
+- mypy runs with `disallow_untyped_defs` and `disallow_incomplete_defs`; CI checks that the wheel
+  contains `py.typed`.
 - Example gallery: CI executes the example notebook and publishes it as HTML with interactive charts on
   GitHub Pages (pull requests: `docs-site` artifact); the README image is rendered by CI as well.
 - Modern development setup: uv with `uv.lock`, PEP 735 dependency groups, ruff (lint + format), mypy, pre-commit.

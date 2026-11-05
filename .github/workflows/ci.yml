@@ -191,7 +191,12 @@ jobs:
         shell: bash
         run: |
           uv run --isolated --no-project --with dist/*.whl \
-            python -c "from plotlywaterfall.waterfall import Waterfall; print('import ok')"
+            python -c "from plotlywaterfall import Waterfall, waterfall; print('import ok')"
+      - name: Check the wheel ships the py.typed marker (PEP 561)
+        shell: bash
+        run: |
+          python3 -m zipfile -l dist/*.whl | grep -q "plotlywaterfall/py.typed" \
+            || { echo "::error::py.typed missing from the wheel"; exit 1; }
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist

@@ -276,7 +276,7 @@ class Waterfall:
         step = self._barwidth + self._gap / 2
         return -step * self.__totalgroups / 2 + step * groupno
 
-    def _get_x_values(self, tdf):
+    def _get_x_values(self, tdf: pd.DataFrame) -> pd.DataFrame:
         # Define x axis and include subtotals and totals
         labels = list(tdf[self._x].unique())
         mt = [False] * len(labels)
@@ -292,7 +292,9 @@ class Waterfall:
         )
         return X
 
-    def _add_group(self, fig, X, groupno, groupname, group):
+    def _add_group(
+        self, fig: go.Figure, X: pd.DataFrame, groupno: int, groupname: Any, group: pd.DataFrame
+    ) -> None:
         level = group.groupby([self._x], sort=False)[self._y].sum().cumsum().shift(1).fillna(0)
         level = X.merge(pd.DataFrame(level), left_index=True, right_index=True, how="left")[
             self._y
@@ -346,7 +348,15 @@ class Waterfall:
         self._add_lines(fig, X, group, groupno)
 
     def _segment_texts(
-        self, X, values, categoryname, groupname, is_total, net, level_after, n_segments
+        self,
+        X: pd.DataFrame,
+        values: np.ndarray,
+        categoryname: Any,
+        groupname: Any,
+        is_total: np.ndarray,
+        net: np.ndarray,
+        level_after: np.ndarray,
+        n_segments: np.ndarray,
     ) -> dict:
         """Hover text (and segment labels) for one trace."""
         hover = []
@@ -377,7 +387,16 @@ class Waterfall:
             kwargs.update(text=texts, textposition="inside", insidetextanchor="middle", textangle=0)
         return kwargs
 
-    def _add_bar_labels(self, fig, X, values, bases, net, is_total, groupno) -> None:
+    def _add_bar_labels(
+        self,
+        fig: go.Figure,
+        X: pd.DataFrame,
+        values: np.ndarray,
+        bases: np.ndarray,
+        net: np.ndarray,
+        is_total: np.ndarray,
+        groupno: int,
+    ) -> None:
         """One label per bar: its signed change, or its value for totals, outside the bar."""
         present = ~np.isnan(values)
         ends = np.where(present, bases + np.nan_to_num(values), np.nan)
@@ -392,7 +411,9 @@ class Waterfall:
                 fig, position + center, net[p], top, bottom, signed=not bool(is_total[p])
             )
 
-    def _add_label(self, fig, x, value, top, bottom, signed) -> None:
+    def _add_label(
+        self, fig: go.Figure, x: float, value: float, top: float, bottom: float, signed: bool
+    ) -> None:
         above = value >= 0
         self._label_ys["above" if above else "below"].append(top if above else bottom)
         fig.add_annotation(
@@ -404,7 +425,7 @@ class Waterfall:
             yshift=2 if above else -2,
         )
 
-    def _make_room_for_labels(self, fig) -> None:
+    def _make_room_for_labels(self, fig: go.Figure) -> None:
         """Plotly's autorange ignores annotations: extend it so labels at the outermost bars
         are not clipped (the axis still autoscales, so later changes keep working)."""
         above, below = self._label_ys["above"], self._label_ys["below"]
@@ -418,11 +439,11 @@ class Waterfall:
             include.append(min(below) - 0.08 * span)
         fig.update_layout(yaxis_autorangeoptions_include=include)
 
-    def _legend_kwargs(self) -> dict:
+    def _legend_kwargs(self) -> dict[str, Any]:
         # Only set showlegend when hiding, so that figures stay identical to earlier versions
         return {} if self._coloring.show_trace_legend else {"showlegend": False}
 
-    def _track_directions(self, values, is_total) -> None:
+    def _track_directions(self, values: np.ndarray, is_total: np.ndarray) -> None:
         """Remember which of increase / decrease / total occur, for the direction legend."""
         present = ~np.isnan(values)
         if (present & is_total[:, None]).any():
@@ -433,13 +454,15 @@ class Waterfall:
         if (steps < 0).any():
             self._used_directions.add("decrease")
 
-    def _category_values(self, X, category) -> np.ndarray:
+    def _category_values(self, X: pd.DataFrame, category: pd.DataFrame) -> np.ndarray:
         """Segment heights of one category per x-position; totals hold the running sum."""
         values = category.groupby([self._x])[self._y].sum()
         y = X.merge(pd.DataFrame(values), left_index=True, right_index=True, how="left")[self._y]
         return y.fillna(0).cumsum().where(X.makeTotal, y).to_numpy(dtype=float)
 
-    def _layout_segments(self, values, level, groupno):
+    def _layout_segments(
+        self, values: np.ndarray, level: np.ndarray, groupno: int
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Compute base, offset and width of every segment of one group.
 
         Bars whose segments share a sign are stacked in category order. Bars with mixed
@@ -473,7 +496,7 @@ class Waterfall:
                 offsets[p, c] = self._offset(groupno) + k * slot + slot * (1 - SUBSTEP_FILL) / 2
         return bases, offsets, widths, mixed
 
-    def _order_steps(self, present, row) -> list[int]:
+    def _order_steps(self, present: np.ndarray, row: np.ndarray) -> list[int]:
         """Order of the sub-steps (category indices) within one split bar."""
         indices = list(present)
         if self._step_order == "positive_first":
@@ -482,7 +505,16 @@ class Waterfall:
             return sorted(indices, key=lambda c: -abs(row[c]))
         return indices
 
-    def _add_net_ghost(self, fig, X, level, values, mixed, groupno, groupname):
+    def _add_net_ghost(
+        self,
+        fig: go.Figure,
+        X: pd.DataFrame,
+        level: np.ndarray,
+        values: np.ndarray,
+        mixed: np.ndarray,
+        groupno: int,
+        groupname: Any,
+    ) -> None:
         """Light bar behind the sub-steps of split bars, spanning the net change."""
         fig.add_bar(
             x=X[self._x].to_numpy()[mixed],
@@ -499,7 +531,9 @@ class Waterfall:
             offset=self._offset(groupno),
         )
 
-    def _add_lines(self, fig, X, group, groupno):
+    def _add_lines(
+        self, fig: go.Figure, X: pd.DataFrame, group: pd.DataFrame, groupno: int
+    ) -> None:
         x = X[self._x]
         ys = group.groupby([self._x], sort=False)[self._y].sum()
         ys = (
@@ -515,7 +549,7 @@ class Waterfall:
             if not np.isnan(y):
                 fig.add_shape(x0=x0, x1=x1, y0=y, y1=y, line=self._connector_line)
 
-    def _add_sumtotal(self, fig, X, tdf):
+    def _add_sumtotal(self, fig: go.Figure, X: pd.DataFrame, tdf: pd.DataFrame) -> None:
         x = X[self._x].max()
         if self._group is None:
             y = tdf[self._y].sum()
@@ -525,7 +559,9 @@ class Waterfall:
                 y = group[self._y].sum()
                 self._add_total_bar_line(fig, x, y, groupno, groupname)
 
-    def _add_total_bar_line(self, fig, x, y, groupno, groupname):
+    def _add_total_bar_line(
+        self, fig: go.Figure, x: float, y: float, groupno: int, groupname: Any
+    ) -> None:
         categoryname = self._total_column_name
         fig.add_bar(
             x=[x + 1],
