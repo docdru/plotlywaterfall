@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal, get_args
 
 import numpy as np
 import pandas as pd
@@ -8,16 +8,20 @@ from plotlywaterfall._coloring import Coloring
 from plotlywaterfall._format import NumberFormat, NumberFormatter
 
 DEFAULT_CONNECTOR_LINE: dict[str, Any] = {"color": "darkgrey", "width": 0.75}
-TOTAL_TYPES = ("category", "sumtotal")
-MIXED_SIGNS = ("steps", "error")
-STEP_ORDERS = ("data", "positive_first", "largest_first")
+TotalType = Literal["category", "sumtotal"]
+MixedSigns = Literal["steps", "error"]
+StepOrder = Literal["data", "positive_first", "largest_first"]
+ValueLabels = Literal["bar", "segment", "both"]
+TOTAL_TYPES: tuple[str, ...] = get_args(TotalType)
+MIXED_SIGNS: tuple[str, ...] = get_args(MixedSigns)
+STEP_ORDERS: tuple[str, ...] = get_args(StepOrder)
 DEFAULT_NET_GHOST: dict[str, Any] = {
     "color": "rgba(136, 135, 128, 0.25)",
     "line": {"color": "rgb(136, 135, 128)", "width": 0.75},
 }
 # Share of a sub-step's slot that is filled by its bar; the rest is a small visual gap
 SUBSTEP_FILL = 0.9
-VALUE_LABELS = ("bar", "segment", "both")
+VALUE_LABELS: tuple[str, ...] = get_args(ValueLabels)
 
 
 class Waterfall:
@@ -33,18 +37,18 @@ class Waterfall:
         connector_line: dict | None = None,
         colors: dict | None = None,
         total: bool = False,
-        total_type: str = "category",
+        total_type: TotalType = "category",
         total_column_name: str = "Total",
         subtotals: dict | None = None,
-        mixed_signs: str = "steps",
+        mixed_signs: MixedSigns = "steps",
         net_ghost: bool | dict = True,
-        step_order: str = "data",
+        step_order: StepOrder = "data",
         color: str | None = None,
         color_discrete_map: dict | None = None,
         color_discrete_sequence: list[str] | None = None,
         pattern_shape: str | None = None,
         pattern_shape_map: dict | None = None,
-        value_labels: str | bool | None = "bar",
+        value_labels: ValueLabels | Literal[False] | None = "bar",
         number_format: NumberFormat = None,
         number_prefix: str = "",
         number_suffix: str = "",
@@ -300,6 +304,8 @@ class Waterfall:
             self._y
         ].fillna(0)
 
+        # (category name, rows) pairs; a single unnamed "category" without a category column
+        categories: list[tuple[Any, pd.DataFrame]]
         if self._category is None:
             categories = [(None, group)]
         else:
@@ -596,7 +602,7 @@ def waterfall(
     group: str | None = None,
     category: str | None = None,
     total: bool = False,
-    total_type: str = "category",
+    total_type: TotalType = "category",
     total_column_name: str = "Total",
     subtotals: dict | None = None,
     color: str | None = None,
@@ -604,15 +610,15 @@ def waterfall(
     color_discrete_sequence: list[str] | None = None,
     pattern_shape: str | None = None,
     pattern_shape_map: dict | None = None,
-    value_labels: str | bool | None = "bar",
+    value_labels: ValueLabels | Literal[False] | None = "bar",
     number_format: NumberFormat = None,
     number_prefix: str = "",
     number_suffix: str = "",
     title: str | None = None,
     labels: dict | None = None,
-    mixed_signs: str = "steps",
+    mixed_signs: MixedSigns = "steps",
     net_ghost: bool | dict = True,
-    step_order: str = "data",
+    step_order: StepOrder = "data",
     barwidth: float = 0.3,
     gap: float = 0.01,
     connector_line: dict | None = None,

@@ -5,6 +5,8 @@
 ### Added
 - **Type hints throughout** and a `py.typed` marker, so type checkers (mypy, pyright) use the
   package's annotations.
+- Options with a fixed set of values (`total_type`, `mixed_signs`, `step_order`, `value_labels`) are
+  typed as `Literal`s, so editors suggest the valid values and type checkers catch typos.
 - **`waterfall(df, x=..., y=..., ...)`**: one call that returns the figure, like plotly express'
   `px.bar`. Same arguments as `Waterfall` (keyword-only after `x` and `y`, without the deprecated
   `colors`); `Waterfall` stays for building subtotals step by step.
