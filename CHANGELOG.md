@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [1.1.0] - 2026-11-05
+## [1.2.0] - 2026-11-05
 
 ### Added
 - **Start and end levels for bridges**: `start="EBIT 2025"` marks x-values that hold a level, not a
@@ -21,7 +21,7 @@
 - Hover text of totals without categories names the total (`Subtotal: 5`) instead of `Total: 5`.
 - Dates mixed with text labels on the x-axis (e.g. `"Opening"` and month ends) are formatted one by one.
 
-## [1.0.1] - 2026-11-05
+## [1.1.0] - 2026-11-05
 
 ### Fixed
 - **Wrong levels with groups whose rows are in a different order**: running levels were accumulated
