@@ -1,4 +1,4 @@
-"""Given and calculated levels: measure, start, reconcile (1.1.0)."""
+"""Given and calculated levels: measure, start, reconcile (1.2.0)."""
 
 import numpy as np
 import pandas as pd
