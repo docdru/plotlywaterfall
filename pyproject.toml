@@ -133,8 +133,8 @@ warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 check_untyped_defs = true
-# Tighten step by step: enable `disallow_untyped_defs = true` once the
-# private helpers in waterfall.py carry type hints.
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
 
 [[tool.mypy.overrides]]
 module = ["plotly.*"]
