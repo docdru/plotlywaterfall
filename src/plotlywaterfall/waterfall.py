@@ -32,6 +32,28 @@ DEFAULT_NET_GHOST: dict[str, Any] = {
 SUBSTEP_FILL = 0.9
 # helper column with each row's position in the original DataFrame (order of appearance)
 ROW = "__plotlywaterfall_row__"
+Measure = Literal["relative", "total", "absolute"]
+MEASURES: tuple[str, ...] = get_args(Measure)
+Reconcile = Literal["other", "jump", "error"]
+RECONCILE: tuple[str, ...] = get_args(Reconcile)
+
+
+class GapKey:
+    """x-position of an inserted bar for the gap between a given level and the walk.
+
+    Several gaps may carry the same label ("Other"), so each is its own object."""
+
+    def __init__(self, label: str, before: Any):
+        self.label = label
+        self.before = before
+
+    def __str__(self) -> str:
+        return self.label
+
+    def __repr__(self) -> str:
+        return f"GapKey({self.label!r}, before={self.before!r})"
+
+
 VALUE_LABELS: tuple[str, ...] = get_args(ValueLabels)
 
 
@@ -68,6 +90,10 @@ class Waterfall:
         labels: dict | None = None,
         category_orders: dict[str, list] | None = None,
         x_format: str | Callable[[Any], str] | None = None,
+        measure: str | None = None,
+        start: Any = None,
+        reconcile: Reconcile = "other",
+        reconcile_label: str = "Other",
     ):
         """Instanciate Waterfall object. All configuration is done by handing the correct kwargs.
 
@@ -145,6 +171,21 @@ class Waterfall:
                 pattern for dates (e.g. "%b %Y"), or a callable taking an x-value and returning
                 its label. Defaults to None: dates are shown as "Jan 2026" when they are in
                 different months, else as "2026-01-31"; other values as str(value).
+            measure (str | None, optional): Column saying what each row's value is, as in
+                plotly's go.Waterfall: "relative" (a change; also for empty cells), "absolute"
+                (a given level, e.g. last year's EBIT) or "total" (a level calculated from the
+                rows before; its value is ignored). Levels are drawn like totals. All rows of
+                an x-value must have the same measure. Defaults to None (all relative).
+            start (Any, optional): x-value (or list of x-values) whose rows are given levels,
+                a shortcut for measure="absolute" on them, e.g. start="EBIT 2025".
+                Defaults to None.
+            reconcile (str, optional): What to do when a given level differs from the level
+                the changes before it lead to: "other" inserts a bar for the difference
+                (labelled reconcile_label) so that the walk adds up, "jump" just draws the
+                given level, "error" raises ValueError. A given level at the start has nothing
+                to reconcile. Defaults to "other".
+            reconcile_label (str, optional): Label of the bars inserted by reconcile="other".
+                Defaults to "Other".
 
         Raises:
             TypeError: If df is not a DataFrame or subtotals is not a dict.
@@ -202,6 +243,7 @@ class Waterfall:
             negative_style=negative_style,
             unit=None if number_unit == "auto" else number_unit,
         )
+        self._measure_column = measure
         self._test_df()
         self._category_orders = dict(category_orders or {})
         dimensions = [c for c in (x, group, category) if c is not None]
@@ -212,6 +254,11 @@ class Waterfall:
             )
         self._x_values = self._ordered_values(x)
         self._x_label = self._x_labeller(x_format)
+        if reconcile not in RECONCILE:
+            raise ValueError(f"reconcile must be one of {RECONCILE}, got {reconcile!r}")
+        self._reconcile = reconcile
+        self._reconcile_label = reconcile_label
+        self._measures = self._read_measures(measure, start)
         self._coloring = Coloring(
             df,
             group=group,
@@ -253,7 +300,8 @@ class Waterfall:
         position = {value: i for i, value in enumerate(self._x_values)}
         tdf = self._df.assign(**{ROW: np.arange(len(self._df))})
         tdf = tdf.iloc[np.argsort(tdf[self._x].map(position).to_numpy(), kind="stable")]
-        X = self._get_x_values(tdf)
+        tdf, gaps = self._apply_measures(tdf)
+        X = self._get_x_values(tdf, gaps)
         if self._number_unit == "auto":
             self._fmt.unit = auto_unit(self._chart_values(tdf))
         self._coloring.resolve()
@@ -316,14 +364,17 @@ class Waterfall:
         return values
 
     def _test_df(self) -> None:
-        for argument in ("x", "y", "group", "category"):
-            column = getattr(self, f"_{argument}")
+        for argument in ("x", "y", "group", "category", "measure"):
+            column = getattr(self, "_measure_column" if argument == "measure" else f"_{argument}")
             if column is not None and column not in self._df.columns:
                 raise ValueError(
                     f"{argument}={column!r} is not a column of df. "
                     f"Available columns: {list(self._df.columns)}"
                 )
         missing = self._df[self._y].isna()
+        if self._measure_column is not None and self._measure_column in self._df.columns:
+            # rows with measure "total" need no value: the level is calculated
+            missing &= self._df[self._measure_column] != "total"
         if missing.any():
             raise ValueError(
                 f"Column {self._y!r} contains missing values (NaN) in rows "
@@ -348,6 +399,91 @@ class Waterfall:
             raise ValueError(f"Cannot find value {x!r} in data column {self._x!r}")
         self._subtotals[x] = name
 
+    def _read_measures(self, measure: str | None, start: Any) -> dict[Any, str]:
+        """x-value -> "total" / "absolute" for x-values that are levels (others are changes)."""
+        measures: dict[Any, str] = {}
+        if measure is not None:
+            kinds = self._df[measure].fillna("relative")
+            invalid = sorted(set(kinds) - set(MEASURES), key=str)
+            if invalid:
+                raise ValueError(f"measure values must be one of {MEASURES}, got {invalid}")
+            per_x = kinds.groupby(self._df[self._x], sort=False, observed=True).unique()
+            mixed = [x for x, values in per_x.items() if len(values) > 1]
+            if mixed:
+                raise ValueError(
+                    f"All rows of an x-value need the same measure; differs for {mixed}"
+                )
+            measures = {x: values[0] for x, values in per_x.items() if values[0] != "relative"}
+        if start is not None:
+            for x in start if isinstance(start, (list, tuple)) else [start]:
+                if x not in self._x_values:
+                    raise ValueError(f"start={x!r} is not a value of column {self._x!r}")
+                measures[x] = "absolute"
+        return measures
+
+    def _apply_measures(self, tdf: pd.DataFrame) -> tuple[pd.DataFrame, dict[Any, GapKey]]:
+        """Turn given levels into changes, so that the rest of the code only sees changes.
+
+        A row with measure "absolute" at x-position p holds a level. It is replaced by the
+        change that leads from the level before p to the given one, per group and category.
+        That change is placed at p itself (a total position, which shows the cumulative
+        value, i.e. the given level) or, with reconcile="other", in an inserted "Other" bar
+        before p. Rows with measure "total" are dropped: p shows the calculated level.
+        """
+        if not self._measures:
+            return tdf, {}
+        totals = [x for x, kind in self._measures.items() if kind == "total"]
+        absolutes = [x for x in self._x_values if self._measures.get(x) == "absolute"]
+        tdf = tdf[~tdf[self._x].isin(totals)]
+        position = {x: i for i, x in enumerate(self._x_values)}
+        gaps: dict[Any, GapKey] = {}
+        frames = []
+        for groupname, group in self._groups(tdf) if self._group is not None else [(None, tdf)]:
+            for p in absolutes:
+                at = group[group[self._x] == p]
+                if at.empty:  # this group has no given level here: shown as a calculated total
+                    continue
+                # rows before p (inserted gap rows of earlier levels have no position: before)
+                rank = group[self._x].map(position).fillna(-1)
+                before = group[rank < position[p]]
+                by = self._category
+                given = at.groupby(by, sort=False)[self._y].sum() if by else at[self._y].sum()
+                if by:
+                    reached = before.groupby(by, sort=False)[self._y].sum()
+                    keys = list(dict.fromkeys([*reached.index, *given.index]))
+                    change = given.reindex(keys, fill_value=0) - reached.reindex(keys, fill_value=0)
+                else:
+                    change = pd.Series({None: given - before[self._y].sum()})
+                group = group[group[self._x] != p]
+                change = change[~np.isclose(change.to_numpy(dtype=float), 0)]
+                if change.empty:
+                    continue
+                target: Any = p
+                if not before.empty:  # a level at the start has nothing to reconcile
+                    if self._reconcile == "error":
+                        raise ValueError(
+                            f"The given level at {p!r} differs from the level the changes "
+                            f"before it lead to by {change.sum():g}"
+                            + ("" if groupname is None else f" (group {groupname!r})")
+                            + '; use reconcile="other" or "jump"'
+                        )
+                    if self._reconcile == "other":
+                        target = gaps.setdefault(p, GapKey(self._reconcile_label, p))
+                rows = pd.DataFrame(
+                    {
+                        self._x: [target] * len(change),
+                        self._y: change.to_numpy(dtype=float),
+                        ROW: len(self._df) + np.arange(len(change)),
+                    }
+                )
+                if by:
+                    rows[by] = list(change.index)
+                if self._group is not None:
+                    rows[self._group] = groupname
+                group = pd.concat([group, rows], ignore_index=True)
+            frames.append(group)
+        return pd.concat(frames, ignore_index=True), gaps
+
     def _ordered_values(self, column: str) -> list:
         """Values of a column in display order: category_orders first, then a Categorical's
         order, else the order of appearance."""
@@ -364,18 +500,21 @@ class Waterfall:
         return values
 
     def _x_labeller(self, x_format: str | Callable[[Any], str] | None) -> Callable[[Any], str]:
-        """Function that turns an x-value into its axis / hover label."""
+        """Function that turns an x-value into its axis / hover label. Dates are formatted one
+        by one, so that they can be mixed with text labels such as "Opening"."""
         if callable(x_format):
             return x_format
         dates = [v for v in self._x_values if isinstance(v, (datetime.date, np.datetime64))]
-        if x_format is not None:
-            if len(dates) != len(self._x_values):
+        if not dates:
+            if x_format is not None:
                 raise ValueError(
                     "x_format as a string is a strftime pattern for date x-values; "
                     "use a callable for other values"
                 )
+            return str
+        if x_format is not None:
             pattern = x_format
-        elif dates and len(dates) == len(self._x_values):
+        else:
             stamps = pd.to_datetime(pd.Series(dates))
             if (stamps != stamps.dt.normalize()).any():
                 pattern = "%Y-%m-%d %H:%M"
@@ -383,23 +522,37 @@ class Waterfall:
                 pattern = "%b %Y"
             else:
                 pattern = "%Y-%m-%d"
-        else:
-            return str
-        return lambda value: pd.Timestamp(value).strftime(pattern)
+
+        def label(value: Any) -> str:
+            if isinstance(value, (datetime.date, np.datetime64)):
+                return pd.Timestamp(value).strftime(pattern)
+            return str(value)
+
+        return label
 
     def _label(self, value: Any, is_total: bool) -> str:
         """Label of an x-axis position; totals and subtotals carry their name."""
-        return str(value) if is_total else self._x_label(value)
+        if is_total or isinstance(value, GapKey):
+            return str(value)
+        return self._x_label(value)
 
     def _offset(self, groupno: int) -> float:
         """Horizontal offset of the left edge of group `groupno`'s bars from the x-value."""
         step = self._barwidth + self._gap / 2
         return -step * self.__totalgroups / 2 + step * groupno
 
-    def _get_x_values(self, tdf: pd.DataFrame) -> pd.DataFrame:
-        # Define x axis and include subtotals and totals
-        labels = list(self._x_values)
-        mt = [False] * len(labels)
+    def _get_x_values(
+        self, tdf: pd.DataFrame, gaps: dict[Any, GapKey] | None = None
+    ) -> pd.DataFrame:
+        # Define x axis and include subtotals and totals; levels (measure) show like totals
+        labels: list = []
+        mt: list[bool] = []
+        for value in self._x_values:
+            if gaps and value in gaps:
+                labels.append(gaps[value])
+                mt.append(False)
+            labels.append(value)
+            mt.append(value in self._measures)
         for total in self._subtotals:
             pos = labels.index(total) + 1
             labels.insert(pos, self._subtotals[total])
@@ -419,7 +572,13 @@ class Waterfall:
         sums = group.groupby([self._x], sort=False)[self._y].sum()
         steps = X.merge(pd.DataFrame(sums), left_index=True, right_index=True, how="left")[self._y]
         # (positions without data of this group have no bar; their base stays 0 as before)
-        level = steps.fillna(0).cumsum().shift(1).fillna(0).where(steps.notna(), 0)
+        level = (
+            steps.fillna(0)
+            .cumsum()
+            .shift(1)
+            .fillna(0)
+            .where(steps.notna() & ~X.makeTotal.astype(bool), 0)
+        )
 
         # (category name, rows) pairs; a single unnamed "category" without a category column
         categories: list[tuple[Any, pd.DataFrame]]
@@ -488,7 +647,10 @@ class Waterfall:
                 texts.append("")
                 continue
             total = bool(is_total[p])
-            name = categoryname if categoryname is not None else ("Total" if total else "Change")
+            if categoryname is not None:
+                name = categoryname
+            else:
+                name = self._label(label, total) if total else "Change"
             lines = [f"{name}: {self._fmt(value, signed=not total)}"]
             if total and n_segments[p] > 1:
                 lines.append(f"{self._label(label, total)}: {self._fmt(net[p])}")
@@ -590,7 +752,7 @@ class Waterfall:
 
     def _category_values(self, X: pd.DataFrame, category: pd.DataFrame) -> np.ndarray:
         """Segment heights of one category per x-position; totals hold the running sum."""
-        values = category.groupby([self._x])[self._y].sum()
+        values = category.groupby([self._x], sort=False)[self._y].sum()
         y = X.merge(pd.DataFrame(values), left_index=True, right_index=True, how="left")[self._y]
         return y.fillna(0).cumsum().where(X.makeTotal, y).to_numpy(dtype=float)
 
@@ -748,6 +910,10 @@ def waterfall(
     labels: dict | None = None,
     category_orders: dict[str, list] | None = None,
     x_format: str | Callable[[Any], str] | None = None,
+    measure: str | None = None,
+    start: Any = None,
+    reconcile: Reconcile = "other",
+    reconcile_label: str = "Other",
     mixed_signs: MixedSigns = "steps",
     net_ghost: bool | dict = True,
     step_order: StepOrder = "data",
@@ -789,6 +955,10 @@ def waterfall(
         labels=labels,
         category_orders=category_orders,
         x_format=x_format,
+        measure=measure,
+        start=start,
+        reconcile=reconcile,
+        reconcile_label=reconcile_label,
         mixed_signs=mixed_signs,
         net_ghost=net_ghost,
         step_order=step_order,

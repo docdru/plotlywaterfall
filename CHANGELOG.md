@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-05
+
+### Added
+- **Start and end levels for bridges**: `start="EBIT 2025"` marks x-values that hold a level, not a
+  change; they are drawn like totals (grey with direction colours, unsigned labels).
+- **`measure` column** with plotly's `go.Waterfall` names: `"relative"` (change), `"absolute"`
+  (given level, e.g. budget or actual) and `"total"` (calculated level, value ignored). Works with
+  categories (stacked levels) and groups (each group its own levels).
+- **`reconcile`** for given levels that the changes before them do not add up to: `"other"` (default)
+  inserts a bar for the difference (`reconcile_label`, default `"Other"`), `"jump"` draws the given
+  level, `"error"` raises `ValueError`.
+- Example gallery: a new first part with finance examples (EBIT bridge, budget vs actual by segment,
+  monthly cash-flow walk, one bridge per region, from a ledger to a bridge) and sections on order,
+  dates and export.
+
+### Changed
+- Hover text of totals without categories names the total (`Subtotal: 5`) instead of `Total: 5`.
+- Dates mixed with text labels on the x-axis (e.g. `"Opening"` and month ends) are formatted one by one.
+
 ## [1.0.1] - 2026-11-05
 
 ### Fixed

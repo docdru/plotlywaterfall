@@ -139,6 +139,14 @@ def test_dates_with_times_and_python_dates():
     assert _ticks(waterfall(df, x="X", y="Y")) == ["Jan 2026", "Feb 2026"]
 
 
+def test_dates_mixed_with_text_labels():
+    df = pd.DataFrame(
+        {"X": ["Opening", *pd.date_range("2026-01-31", periods=2, freq="ME")], "Y": [100, 5, -3]}
+    )
+    fig = waterfall(df, x="X", y="Y", start="Opening", total=True, total_column_name="Closing")
+    assert _ticks(fig) == ["Opening", "Jan 2026", "Feb 2026", "Closing"]
+
+
 def test_x_format():
     df = pd.DataFrame({"X": pd.date_range("2026-01-31", periods=2, freq="ME"), "Y": [1, 2]})
     assert _ticks(waterfall(df, x="X", y="Y", x_format="%m/%y")) == ["01/26", "02/26"]

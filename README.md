@@ -65,6 +65,30 @@ fig
 
 ![Example waterfall chart with three groups, stacked categories, a subtotal and a total](https://docdru.github.io/plotlywaterfall/images/readme-example.png)
 
+### Bridges: start and end levels
+
+A finance bridge goes from one level to another, e.g. from last year's EBIT to this year's.
+`start` marks the x-value that holds a level instead of a change; it is drawn like a total:
+
+```python
+waterfall(df, x="item", y="MEUR", start="EBIT 2025", total=True, total_column_name="EBIT 2026")
+```
+
+When the data says what each row is, pass a `measure` column with plotly's names: `"relative"`
+(a change, also for empty cells), `"absolute"` (a given level, e.g. budget or actual) or `"total"`
+(a level calculated from the rows before; its value is ignored).
+
+| X | Y | measure |
+|---|---|---|
+| Budget | 100 | absolute |
+| Volume | 2 | relative |
+| Costs | -3.5 | relative |
+| Actual | 102 | absolute |
+
+If the changes do not add up to a given level, `reconcile` decides: `"other"` (default) inserts a bar
+for the difference, labelled `reconcile_label` (`"Other"`), so the walk adds up; `"jump"` draws the
+given level as it is; `"error"` raises a `ValueError`.
+
 ### Labels, number format and hover
 
 Every bar is labelled with its change (signed, e.g. `+9`) or, for totals, its value; hovering shows
