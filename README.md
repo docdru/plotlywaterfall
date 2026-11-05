@@ -28,12 +28,16 @@ uv add plotlywaterfall
 **[Example gallery](https://docdru.github.io/plotlywaterfall/)** with interactive charts for every feature (rendered from
 [`examples/examples.ipynb`](https://github.com/docdru/plotlywaterfall/blob/main/examples/examples.ipynb) by CI).
 
+`waterfall(df, x=..., y=..., ...)` returns a plotly figure, like plotly express' `px.bar`. The class
+`Waterfall` takes the same arguments (`Waterfall(...).get_fig()`) and also lets you add subtotals step by
+step with `add_subtotal`.
+
 A complete example with groups, stacked categories, a subtotal and a total:
 
 ```python
 import pandas as pd
 
-from plotlywaterfall import Waterfall
+from plotlywaterfall import waterfall
 
 df = pd.DataFrame(
     {
@@ -44,7 +48,7 @@ df = pd.DataFrame(
     }
 )
 
-fig = Waterfall(
+fig = waterfall(
     df,
     x="X",
     y="Y",
@@ -54,7 +58,7 @@ fig = Waterfall(
     subtotals={"C": "Subtotal"},
     color_discrete_map={"one": "#2a78d6", "two": "#eb6834", "three": "#1baf7a"},
     pattern_shape="group",
-).get_fig()
+)
 fig.update_layout(template="plotly_white")
 fig
 ```
@@ -74,8 +78,8 @@ the step, its category and the running total.
 | `title` | Figure title | `None` |
 | `labels` | Display names for columns, like plotly express (`{"Y": "Cashflow [MUSD]"}`); titles the axes | y-axis titled with the y column |
 
-    Waterfall(df, x="X", y="Y", total=True, number_prefix="$", number_suffix="M",
-              title="Cash bridge", labels={"Y": "Cashflow [MUSD]"}).get_fig()
+    waterfall(df, x="X", y="Y", total=True, number_prefix="$", number_suffix="M",
+              title="Cash bridge", labels={"Y": "Cashflow [MUSD]"})
 
 ### Colors
 
@@ -91,8 +95,8 @@ Colours work like in plotly express:
 
 Colours are assigned per value, so a category has the same colour in every group:
 
-    Waterfall(df, x="X", y="Y", category="category", group="group", total=True,
-              pattern_shape="group").get_fig()
+    waterfall(df, x="X", y="Y", category="category", group="group", total=True,
+              pattern_shape="group")
 
 The older `colors` argument still works, but is deprecated and will be removed in version 1.0.
 
@@ -108,7 +112,7 @@ ends, with a light "net ghost" bar behind it showing the net change:
         "Y": [9, -7, 1, -4],
         "category": ["Operating", "Operating", "Operating", "One-off"],
     })
-    Waterfall(df, x="X", y="Y", category="category", total=True).get_fig()
+    waterfall(df, x="X", y="Y", category="category", total=True)
 
 Options:
 

@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Added
+- **`waterfall(df, x=..., y=..., ...)`**: one call that returns the figure, like plotly express'
+  `px.bar`. Same arguments as `Waterfall` (keyword-only after `x` and `y`, without the deprecated
+  `colors`); `Waterfall` stays for building subtotals step by step.
 - **New colour API in plotly-express style**: `color` (category column, group column or
   `"direction"`), `color_discrete_map` (value → colour; `(group, category)` tuples for one group's
   category), `color_discrete_sequence`, `pattern_shape` and `pattern_shape_map`.
@@ -21,6 +24,8 @@
   (`"steps"` default, `"error"` for the previous behaviour), `net_ghost` and `step_order`.
 
 ### Changed
+- `import plotlywaterfall.waterfall as m` now gives the `waterfall` function (the package exports it under
+  that name). `from plotlywaterfall.waterfall import Waterfall` keeps working.
 - **Value labels are shown by default** (`value_labels=None` restores unlabelled bars) and the y-axis is
   titled with the y column name (or its `labels` entry). The axis range leaves room for the labels.
 - **Minimum Python is now 3.11** (3.8–3.10 are end-of-life; the code never ran on 3.8/3.9).
