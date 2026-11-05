@@ -1,0 +1,72 @@
+# AI PR review config, used by the docdru/ai-review action
+# (.github/workflows/ai-review.yml). Read from main: a change takes effect
+# after it is merged. Try it first with --dry-run --config, see
+# https://github.com/docdru/ai-review#try-it-locally
+
+model = "mistral-large-2512"
+
+project = """
+'plotlywaterfall', a small open-source Python library (MIT, published on PyPI)
+that builds plotly waterfall charts from pandas DataFrames, with groups side by
+side, stacked categories, subtotals/totals and custom colors. Users are analysts
+building financial reports in Jupyter."""
+
+instructions = """
+Layout: library code in src/plotlywaterfall/ (class `Waterfall` in waterfall.py;
+public API = the constructor keyword arguments, `get_fig()` and `add_subtotal()`);
+version in src/plotlywaterfall/__about__.py; tests in tests/ (pytest, warnings are
+errors); example notebook examples/examples.ipynb (executed in CI); CI and release
+workflows in .github/workflows (releases go to PyPI via trusted publishing on v*
+tags); dev tooling via uv, ruff and mypy. Correctness & tests matter most for a
+plotting library."""
+
+reference_docs = [
+  { path = "README.md", role = "user docs and examples, i.e. the public API contract" },
+  { path = "CHANGELOG.md", role = "release notes" },
+  { path = "pyproject.toml", role = "supported Python and dependency ranges" },
+  { path = "CLAUDE.md", role = "binding project rules", required = false },
+  { path = "AGENTS.md", role = "binding project rules", required = false },
+]
+
+# Not sent; its source (pyproject.toml) is reviewed instead.
+generated_files = ["uv.lock"]
+
+[[sections]]
+key = "correctness"
+title = "🧪 Correctness & tests"
+checklist = """
+- logic errors in bar bases / cumulative sums, subtotal and total positions,
+  connector-line coordinates, group offsets and bar widths, sign handling, NaN handling;
+- pandas pitfalls across the supported range (pandas 2.2 to 3.x): groupby `sort` and
+  `observed` defaults, index alignment in merges, mutating the caller's DataFrame or
+  dicts, dtype surprises, chained assignment; plotly API use across 5.24 to 7.x;
+- behaviour changes need tests; bug fixes need a regression test; flag removed or
+  weakened assertions and tests that cannot fail."""
+
+[[sections]]
+key = "api_docs"
+title = "📚 API & docs consistency"
+reference = true
+checklist = """
+- public API changes (renamed/removed kwargs, changed defaults, changed exceptions or
+  messages users may match on) are breaking: they need a CHANGELOG.md entry and a
+  version bump in __about__.py;
+- README examples must still work with the change; docstrings must match signatures;
+- changes to supported Python or dependency ranges in pyproject.toml must be
+  reflected in classifiers, README and the CI test matrix.
+Cite the document (e.g. "README.md: Usage", "CHANGELOG.md", "pyproject.toml:
+requires-python")."""
+
+[[sections]]
+key = "security"
+title = "🔒 Security & supply chain"
+security = true
+checklist = """
+the library itself is low-risk; be strict on CI:
+- no eval/exec/pickle of user input, no network access or file writes at import;
+- GitHub Actions: actions pinned to full commit SHAs with a version comment, minimal
+  `permissions`, `persist-credentials: false`, no `${{ }}` expressions with untrusted
+  input inside `run:`, no pull_request_target/workflow_run that checks out or runs PR
+  code, the release workflow keeps trusted publishing and the tag/version check;
+- no committed secrets; new dependencies are justified, correctly spelled (typosquats)
+  and have sensible version bounds."""

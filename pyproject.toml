@@ -128,7 +128,7 @@ docstring-code-format = true
 # Type checking
 # ---------------------------------------------------------------------------
 [tool.mypy]
-files = ["src", "scripts/ai_review.py"]
+files = ["src"]
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
@@ -145,7 +145,7 @@ ignore_missing_imports = true
 # ---------------------------------------------------------------------------
 [tool.pytest.ini_options]
 minversion = "9.0"
-testpaths = ["tests", "scripts/tests"]
+testpaths = ["tests"]
 addopts = [
   "--import-mode=importlib",
   "-ra",
