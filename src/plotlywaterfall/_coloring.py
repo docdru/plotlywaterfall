@@ -50,6 +50,7 @@ class Coloring:
         pattern_shape: str | None,
         pattern_shape_map: dict | None,
         total_name: str = "Total",
+        orders: dict[str, list] | None = None,
     ):
         self._group = group
         self._category = category
@@ -74,8 +75,14 @@ class Coloring:
             )
         self.pattern_shape = pattern_shape
 
-        self._color_values = [] if color == DIRECTION else list(df[color].unique())
-        self._pattern_values = [] if pattern_shape is None else list(df[pattern_shape].unique())
+        # display order of the group / category values (palette colours are handed out in it)
+        orders = orders or {}
+
+        def values(column: str) -> list:
+            return list(orders[column]) if column in orders else list(df[column].unique())
+
+        self._color_values = [] if color == DIRECTION else values(color)
+        self._pattern_values = [] if pattern_shape is None else values(pattern_shape)
         self._warn_unknown_keys(df)
 
     # ------------------------------------------------------------------ validation

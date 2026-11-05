@@ -75,11 +75,20 @@ the step, its category and the running total.
 | `value_labels` | `"bar"` (one label per bar, outside), `"segment"` (inside each stacked segment), `"both"`, or `None` / `False` for no labels | `"bar"` |
 | `number_format` | Python format spec for the absolute value (e.g. `",.1f"`) or a function | thousands separators, up to two decimals |
 | `number_prefix` / `number_suffix` | Units around the number; the sign stays in front (`-$5M`) | `""` |
+| `number_unit` | `"k"`, `"M"`, `"bn"` (e.g. 12500000 → `12.5M`), or `"auto"` for one unit chosen from the chart's largest value | `None` |
+| `negative_style` | `"minus"` (`-7`, changes `+9`) or `"parentheses"` (accounting: `(7)`, changes unsigned) | `"minus"` |
 | `title` | Figure title | `None` |
 | `labels` | Display names for columns, like plotly express (`{"Y": "Cashflow [MUSD]"}`); titles the axes | y-axis titled with the y column |
+| `category_orders` | Order of x, group or category values, like plotly express (`{"X": ["Revenue", "Costs"]}`) | order of a pandas `Categorical`, else of appearance |
+| `x_format` | Labels of the x-values: a strftime pattern for dates (`"%b %Y"`) or a function | dates as `Jan 2026` (one per month) or `2026-01-31` |
 
     waterfall(df, x="X", y="Y", total=True, number_prefix="$", number_suffix="M",
               title="Cash bridge", labels={"Y": "Cashflow [MUSD]"})
+
+For financial statements: one unit for all labels and accounting negatives,
+
+    waterfall(df, x="X", y="Y", total=True, number_unit="auto", negative_style="parentheses",
+              number_prefix="$")   # $1.25M, ($0.73M), …
 
 ### Colors
 
