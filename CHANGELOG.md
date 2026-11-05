@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-05
+
+### Fixed
+- **Wrong levels with groups whose rows are in a different order**: running levels were accumulated
+  in each group's own row order instead of the x-axis order, so such a group's bars started at the
+  wrong height. They now always follow the x-axis.
+- **Dates on the x-axis** were labelled `Timestamp('2026-01-31 00:00:00')`; they are now shown as
+  `Jan 2026` (dates in different months) or `2026-01-31`, in tick labels and hover.
+- **The order of a pandas `Categorical` x column** was ignored; it now sets the order of the bars
+  (and of groups and categories).
+
+### Added
+- `category_orders` (as in plotly express) to set the order of x, group and category values;
+  the colour palette is assigned in that order.
+- `x_format`: strftime pattern for date x-values or a function for any x-values.
+- `number_unit` (`"k"`, `"M"`, `"bn"` or `"auto"` = one unit for the whole chart) and
+  `negative_style="parentheses"` for accounting-style labels such as `($0.73M)`.
+
 ## [1.0.0] - 2026-11-05
 
 First stable release: a one-call `waterfall()` function, mixed signs within a bar, a plotly-express
