@@ -35,6 +35,6 @@ jobs:
       github.event.pull_request.user.type != 'Bot'
     steps:
       # No checkout: the action reads everything through the API.
-      - uses: docdru/ai-review@c74763c7cd63b73fde67a0e178020b6f871c080d # v1.0.0
+      - uses: docdru/ai-review@4a8870af280275e750e280a2a4eda614ecb6b2e8 # v1.1.0
         with:
           mistral-api-key: ${{ secrets.MISTRAL_API_KEY }}
