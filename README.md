@@ -192,8 +192,10 @@ Common tasks:
 | Open notebooks | `uv run --with jupyterlab jupyter lab` |
 | Build sdist + wheel | `uv build` |
 
-CI (GitHub Actions) runs lint, type checks, the test suite on Python 3.11–3.15 (Linux, plus Windows; macOS on `main` and the weekly run),
+CI (GitHub Actions) runs lint, type checks, the test suite on Python 3.11–3.15 (Linux, plus Windows),
 a test against the lowest supported dependency versions, the docs site, and a package build.
+The tests on macOS run in a separate, informational workflow (`macos.yml`, own badge) on `main` and
+weekly, because hosted macOS runners are sometimes not available.
 
 The **docs site** job executes `examples/examples.ipynb`, renders it to HTML with interactive charts and
 renders the README image from `examples/readme_example.py` (keep it in sync with the README code).
