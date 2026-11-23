@@ -14,7 +14,7 @@ building financial reports in Jupyter."""
 instructions = """
 Layout: library code in src/plotlywaterfall/ (class `Waterfall` in waterfall.py;
 public API = the constructor keyword arguments, `get_fig()` and `add_subtotal()`);
-version in src/plotlywaterfall/__about__.py; tests in tests/ (pytest, warnings are
+version from the git tag (hatch-vcs); tests in tests/ (pytest, warnings are
 errors); example notebook examples/examples.ipynb (executed in CI); CI and release
 workflows in .github/workflows (releases go to PyPI via trusted publishing on v*
 tags); dev tooling via uv, ruff and mypy. Correctness & tests matter most for a
@@ -49,8 +49,8 @@ title = "📚 API & docs consistency"
 reference = true
 checklist = """
 - public API changes (renamed/removed kwargs, changed defaults, changed exceptions or
-  messages users may match on) are breaking: they need a CHANGELOG.md entry and a
-  version bump in __about__.py;
+  messages users may match on) are breaking: they need a CHANGELOG.md entry (the
+  version itself comes from the release tag);
 - README examples must still work with the change; docstrings must match signatures;
 - changes to supported Python or dependency ranges in pyproject.toml must be
   reflected in classifiers, README and the CI test matrix.
