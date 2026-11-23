@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Changed
+- **Releases need only a tag**: the version is taken from the git tag (`hatch-vcs`) instead of
+  `src/plotlywaterfall/__about__.py`, which is removed. Pushing `v1.3.0` (or publishing a GitHub
+  Release with that tag) builds the package, publishes it to PyPI and creates the GitHub Release
+  with the changelog section as notes. `plotlywaterfall.__version__` is unchanged for users.
 - The AI pull-request review now uses the shared action
   [docdru/ai-review](https://github.com/docdru/ai-review), configured in `.github/ai-review.toml`.
   Findings carry a P0–P3 severity and the verdict follows from them. The `AI_REVIEW_MODEL`

@@ -220,10 +220,19 @@ The review is advisory: it is not part of the required checks, and its findings 
 
 ### Releasing
 
-1. Bump `__version__` in `src/plotlywaterfall/__about__.py` and add a `CHANGELOG.md` entry.
-2. Commit, then tag and push: `git tag v0.9.4 && git push origin v0.9.4`.
-3. The `Release` workflow builds the package and publishes it to PyPI via
-   [Trusted Publishing](https://docs.pypi.org/trusted-publishers/) (no API token needed).
+A release is one tag. The version is taken from the tag, so there is nothing to bump.
+
+1. In `CHANGELOG.md`, rename `## [Unreleased]` to `## [1.3.0] - 2026-12-01` and merge that.
+   (If you skip this, the release notes are taken from the `[Unreleased]` section.)
+2. Create the tag, either way:
+   - `git tag v1.3.0 && git push origin v1.3.0`, or
+   - on GitHub: *Releases → Draft a new release → Choose a tag → `v1.3.0` → Publish release*.
+3. The `Release` workflow builds the package from the tag, publishes it to PyPI via
+   [Trusted Publishing](https://docs.pypi.org/trusted-publishers/) (no API token needed) and
+   creates the GitHub Release with the changelog section as notes and the built files attached.
+   A release you created yourself on GitHub keeps its notes and only gets the files.
+
+Tags like `v1.3.0rc1` are published as pre-releases.
 
 ## Changelog
 

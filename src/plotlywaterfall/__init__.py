@@ -1,6 +1,9 @@
 """Plotly-express-style waterfall charts with groups, stacked categories and subtotals."""
 
-from plotlywaterfall.__about__ import __version__
+from importlib.metadata import version as _version
+
 from plotlywaterfall.waterfall import Waterfall, waterfall
+
+__version__ = _version("plotlywaterfall")
 
 __all__ = ["Waterfall", "__version__", "waterfall"]

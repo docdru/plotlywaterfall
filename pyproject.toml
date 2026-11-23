@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.33.0"]
+requires = ["hatchling>=1.33.0", "hatch-vcs>=0.5"]
 build-backend = "hatchling.build"
 
 [project]
@@ -76,8 +76,13 @@ default-groups = ["dev"]
 # ---------------------------------------------------------------------------
 # Build
 # ---------------------------------------------------------------------------
+# The version comes from the git tag (v1.2.3 -> 1.2.3); between tags it is a dev version.
 [tool.hatch.version]
-path = "src/plotlywaterfall/__about__.py"
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+# used when there is no git history at all (e.g. a source zip downloaded from GitHub)
+fallback_version = "0.0.0.dev0"
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -164,7 +169,6 @@ filterwarnings = [
 source_pkgs = ["plotlywaterfall"]
 branch = true
 parallel = true
-omit = ["src/plotlywaterfall/__about__.py"]
 
 [tool.coverage.paths]
 plotlywaterfall = ["src/plotlywaterfall", "*/site-packages/plotlywaterfall"]
