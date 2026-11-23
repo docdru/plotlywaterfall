@@ -1,6 +1,7 @@
 # plotlywaterfall
 
 [![CI](https://github.com/docdru/plotlywaterfall/actions/workflows/ci.yml/badge.svg)](https://github.com/docdru/plotlywaterfall/actions/workflows/ci.yml)
+[![macOS](https://github.com/docdru/plotlywaterfall/actions/workflows/macos.yml/badge.svg)](https://github.com/docdru/plotlywaterfall/actions/workflows/macos.yml)
 [![PyPI](https://img.shields.io/pypi/v/plotlywaterfall)](https://pypi.org/project/plotlywaterfall/)
 [![Python versions](https://img.shields.io/pypi/pyversions/plotlywaterfall)](https://pypi.org/project/plotlywaterfall/)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
@@ -191,8 +192,10 @@ Common tasks:
 | Open notebooks | `uv run --with jupyterlab jupyter lab` |
 | Build sdist + wheel | `uv build` |
 
-CI (GitHub Actions) runs lint, type checks, the test suite on Python 3.11–3.15 (Linux, plus Windows; macOS on `main` and the weekly run),
+CI (GitHub Actions) runs lint, type checks, the test suite on Python 3.11–3.15 (Linux, plus Windows),
 a test against the lowest supported dependency versions, the docs site, and a package build.
+The tests on macOS run in a separate, informational workflow (`macos.yml`, own badge) on `main` and
+weekly, because hosted macOS runners are sometimes not available.
 
 The **docs site** job executes `examples/examples.ipynb`, renders it to HTML with interactive charts and
 renders the README image from `examples/readme_example.py` (keep it in sync with the README code).

@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Changed
+- The macOS tests run in their own informational workflow (`macos.yml`, with its own README
+  badge) instead of the `CI` workflow: a missing hosted macOS runner no longer fails `CI` or
+  blocks the docs deployment.
 - **Releases need only a tag**: the version is taken from the git tag (`hatch-vcs`) instead of
   `src/plotlywaterfall/__about__.py`, which is removed. Pushing `v1.3.0` (or publishing a GitHub
   Release with that tag) builds the package, publishes it to PyPI and creates the GitHub Release
