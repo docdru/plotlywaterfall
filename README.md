@@ -1,6 +1,7 @@
 # plotlywaterfall
 
 [![CI](https://github.com/docdru/plotlywaterfall/actions/workflows/ci.yml/badge.svg)](https://github.com/docdru/plotlywaterfall/actions/workflows/ci.yml)
+[![macOS](https://github.com/docdru/plotlywaterfall/actions/workflows/macos.yml/badge.svg)](https://github.com/docdru/plotlywaterfall/actions/workflows/macos.yml)
 [![PyPI](https://img.shields.io/pypi/v/plotlywaterfall)](https://pypi.org/project/plotlywaterfall/)
 [![Python versions](https://img.shields.io/pypi/pyversions/plotlywaterfall)](https://pypi.org/project/plotlywaterfall/)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
